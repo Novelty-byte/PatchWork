@@ -147,16 +147,64 @@ async function sendManagerAlert(report) {
 }
 
 /**
+ * Sends report data to Make.com webhook for automated Gmail/email workflows
+ */
+async function sendToMakeWebhook(report) {
+  const makeUrl = process.env.MAKE_WEBHOOK_URL;
+  if (!makeUrl) return false;
+
+  try {
+    const payload = {
+      ticket_id: report.id,
+      reporter_name: report.reporter_name,
+      reporter_email: report.email,
+      reporter_contact: report.contact,
+      location: report.location,
+      category: report.category,
+      description: report.description,
+      severity: report.severity,
+      status: report.status,
+      media_urls: report.media_urls || [],
+      verification_status: report.verification?.status || 'unverified',
+      manager_email: process.env.SOCIETY_MANAGER_EMAIL || 'manager@patchwork.local',
+      created_at: report.created_at,
+      status_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/status/${report.id}`
+    };
+
+    const response = await fetch(makeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      console.log(`✅ Report #${report.id} sent to Make.com automation webhook successfully!`);
+      return true;
+    } else {
+      console.error(`⚠️ Make.com webhook responded with status: ${response.status}`);
+      return false;
+    }
+  } catch (err) {
+    console.error(`❌ Failed to send to Make.com webhook:`, err.message);
+    return false;
+  }
+}
+
+/**
  * Triggers asynchronous dual-email notification pipeline
  */
 function dispatchReportNotifications(report) {
   // Run asynchronously in the background so API returns immediately to the user/bot
   setImmediate(async () => {
     try {
-      await Promise.allSettled([
-        sendReporterConfirmation(report),
-        sendManagerAlert(report)
-      ]);
+      if (process.env.MAKE_WEBHOOK_URL) {
+        await sendToMakeWebhook(report);
+      } else {
+        await Promise.allSettled([
+          sendReporterConfirmation(report),
+          sendManagerAlert(report)
+        ]);
+      }
     } catch (err) {
       console.error('Background email dispatch error:', err);
     }
@@ -166,5 +214,7 @@ function dispatchReportNotifications(report) {
 module.exports = {
   dispatchReportNotifications,
   sendReporterConfirmation,
-  sendManagerAlert
+  sendManagerAlert,
+  sendToMakeWebhook
 };
+
