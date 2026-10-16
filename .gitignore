@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables (NEVER COMMIT SENSITIVE KEYS)
+.env
+.env.local
+*.env
+
+# Uploaded media (local temp files)
+uploads/
+*.mp4
+*.mov
+*.avi
+
+# Logs & Database
+*.log
+npm-debug.log*
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# OS Files
+.DS_Store
+Thumbs.db
