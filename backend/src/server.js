@@ -70,13 +70,18 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Express Server
-app.listen(PORT, () => {
-  console.log(`\n==================================================`);
-  console.log(`🚀 WebFix Backend Server running on http://localhost:${PORT}`);
-  console.log(`📡 Health Check:  http://localhost:${PORT}/api/health`);
-  console.log(`📋 Reports API:   http://localhost:${PORT}/api/reports`);
-  console.log(`🎙️ Vapi Webhook:  http://localhost:${PORT}/api/vapi/webhook`);
-  console.log(`📸 Uploads:       http://localhost:${PORT}/api/upload`);
-  console.log(`==================================================\n`);
-});
+// Start Express Server locally or export for serverless (Vercel)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n==================================================`);
+    console.log(`🚀 WebFix Backend Server running on http://localhost:${PORT}`);
+    console.log(`📡 Health Check:  http://localhost:${PORT}/api/health`);
+    console.log(`📋 Reports API:   http://localhost:${PORT}/api/reports`);
+    console.log(`🎙️ Vapi Webhook:  http://localhost:${PORT}/api/vapi/webhook`);
+    console.log(`📸 Uploads:       http://localhost:${PORT}/api/upload`);
+    console.log(`==================================================\n`);
+  });
+}
+
+module.exports = app;
+
