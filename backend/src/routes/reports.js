@@ -11,7 +11,7 @@ const { verifyMediaReport } = require('../services/visionService');
  */
 function sanitizeForPublic(report) {
   if (!report) return null;
-  const { contact, email, ...safe } = report;
+  const { contact, email, phone, ...safe } = report;
   return safe;
 }
 

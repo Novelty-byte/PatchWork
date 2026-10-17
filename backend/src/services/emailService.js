@@ -128,11 +128,11 @@ async function sendManagerAlert(report) {
       <ul>${mediaListHtml}</ul>
 
       <p style="margin-top: 20px;">
-        <a href="${dashboardUrl}" style="background-color: #2b6cb0; color: white; padding: 10px 18px; text-decoration: none; border-radius: 5px; display: inline-block;">Open Manager Dashboard</a>
+        <a href="${dashboardUrl}" style="background-color: #2b6cb0; color: white; padding: 10px 18px; text-decoration: none; border-radius: 5px; display: inline-block;">Open Community Dashboard</a>
       </p>
 
       <p style="font-size: 11px; color: #a0aec0; margin-top: 30px;">
-        * Note: This open report will automatically expire in 24 hours.
+        * Note: Open reports stay visible indefinitely. Once marked solved, reports automatically disappear from the dashboard after 12 hours.
       </p>
     </div>
   `;

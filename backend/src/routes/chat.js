@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 const { dispatchReportNotifications } = require('../services/emailService');
+const { verifyMediaReport } = require('../services/visionService');
+
+function sanitizeForPublic(report) {
+  if (!report) return null;
+  const { contact, email, phone, ...safe } = report;
+  return safe;
+}
 
 /**
  * System prompt to conduct intake and extract structured issue reports
@@ -139,7 +146,16 @@ router.post('/', async (req, res) => {
         media_urls: media_urls
       });
 
-      // Dispatch automated emails to resident and manager
+      // 2. Advisory visual verification runs asynchronously if media is attached
+      if (media_urls && media_urls.length > 0) {
+        verifyMediaReport(media_urls, data.category, data.description)
+          .then(async (verificationResult) => {
+            await db.updateVerification(createdReport.id, verificationResult);
+          })
+          .catch(err => console.warn('Chat verification error:', err.message));
+      }
+
+      // 3. Dispatch automated dual emails via Make.com with full private reporter contact
       dispatchReportNotifications(createdReport);
     }
 
@@ -147,7 +163,7 @@ router.post('/', async (req, res) => {
       success: true,
       reply: aiResponseJson.reply,
       is_complete: Boolean(aiResponseJson.is_complete),
-      report: createdReport
+      report: sanitizeForPublic(createdReport)
     });
   } catch (err) {
     console.error('Error in /api/chat endpoint:', err);
