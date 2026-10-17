@@ -52,6 +52,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       reports: '/api/reports',
+      chat: '/api/chat',
       manager_dashboard: '/api/reports/manager/all',
       vapi_config: '/api/vapi/config',
       upload: '/api/upload'
@@ -71,12 +72,15 @@ app.get('/api/health', (req, res) => {
 
 // Mount Routes
 const reportsRouter = require('./routes/reports');
+const chatRouter = require('./routes/chat');
 const vapiRouter = require('./routes/vapi');
 const uploadRouter = require('./routes/upload');
 
 app.use('/api/reports', reportLimiter, reportsRouter);
+app.use('/api/chat', chatRouter);
 app.use('/api/vapi', vapiRouter);
 app.use('/api/upload', uploadRouter);
+
 
 // Global Error Handler
 app.use((err, req, res, next) => {

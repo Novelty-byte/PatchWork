@@ -53,16 +53,84 @@ The live production backend URL is:
   }
   ```
 
-### C. Voice Call (Vapi Integration)
-- **Endpoint:** `GET https://patch-work-rho.vercel.app/api/vapi/config`
-- Returns the Vapi Assistant ID so the frontend `@vapi-ai/web` button can initiate the call:
+### C. Conversational Chatbot (Text Reporting)
+- **Endpoint:** `POST https://patch-work-rho.vercel.app/api/chat`
+- **Headers:** `Content-Type: application/json`
+- **Body:**
+  ```json
+  {
+    "message": "A deep pothole on Main Street near the park entrance",
+    "history": [
+      { "sender": "user", "text": "Hi" },
+      { "sender": "bot", "text": "Hello! What issue would you like to report?" }
+    ],
+    "media_urls": []
+  }
+  ```
+- **Response:**
   ```json
   {
     "success": true,
-    "assistantId": "f99f9a56-214a-47a1-9449-1de9f2d5dbbe",
-    "ready": true
+    "reply": "Thank you! Could you please share your name and contact number?",
+    "is_complete": false,
+    "report": null
   }
   ```
+  *(When `is_complete` becomes `true`, the ticket is automatically saved and returned in `report.id`).*
+
+### D. Voice Call (Vapi Web Integration)
+Kavya can install the official Vapi Web SDK in her frontend:
+```bash
+npm install @vapi-ai/web
+```
+Example React button component:
+```jsx
+import React, { useState, useEffect } from 'react';
+import Vapi from '@vapi-ai/web';
+
+// Vapi Public Key & Assistant ID
+const vapi = new Vapi('e49651ee-f8d4-46f5-a8ad-722f32fb5aa4');
+const ASSISTANT_ID = 'f99f9a56-214a-47a1-9449-1de9f2d5dbbe';
+
+export function VoiceCallButton() {
+  const [isCalling, setIsCalling] = useState(false);
+
+  useEffect(() => {
+    vapi.on('call-start', () => setIsCalling(true));
+    vapi.on('call-end', () => setIsCalling(false));
+    vapi.on('error', (e) => {
+      console.error(e);
+      setIsCalling(false);
+    });
+  }, []);
+
+  const toggleCall = () => {
+    if (isCalling) {
+      vapi.stop();
+    } else {
+      vapi.start(ASSISTANT_ID);
+    }
+  };
+
+  return (
+    <button 
+      onClick={toggleCall}
+      style={{
+        backgroundColor: isCalling ? '#e53e3e' : '#3182ce',
+        color: 'white',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        border: 'none',
+        cursor: 'pointer',
+        fontWeight: 'bold'
+      }}
+    >
+      {isCalling ? '🔴 End Voice Call' : '🎙️ Speak to AI Assistant'}
+    </button>
+  );
+}
+```
+
 
 ---
 
