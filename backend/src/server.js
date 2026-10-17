@@ -63,7 +63,7 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    service: 'WebFix Backend API',
+    service: 'PatchWork Backend API',
     timestamp: new Date().toISOString()
   });
 });
@@ -91,14 +91,16 @@ app.use((err, req, res, next) => {
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 WebFix Backend Server running on http://localhost:${PORT}`);
-    console.log(`📡 Health Check:  http://localhost:${PORT}/api/health`);
-    console.log(`📋 Reports API:   http://localhost:${PORT}/api/reports`);
-    console.log(`🎙️ Vapi Webhook:  http://localhost:${PORT}/api/vapi/webhook`);
-    console.log(`📸 Uploads:       http://localhost:${PORT}/api/upload`);
+    console.log(`🚀 PatchWork Backend Server running on http://localhost:${PORT}`);
+    console.log(`📡 Production URL: https://patch-work-rho.vercel.app`);
+    console.log(`📡 Health Check:   http://localhost:${PORT}/api/health`);
+    console.log(`📋 Reports API:    http://localhost:${PORT}/api/reports`);
+    console.log(`🎙️ Vapi Webhook:   http://localhost:${PORT}/api/vapi/webhook`);
+    console.log(`📸 Uploads:        http://localhost:${PORT}/api/upload`);
     console.log(`==================================================\n`);
   });
 }
+
 
 module.exports = app;
 

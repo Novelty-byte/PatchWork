@@ -1,7 +1,8 @@
 {
-  "name": "webfix-backend",
+  "name": "patchwork-backend",
   "version": "1.0.0",
-  "description": "Backend API and AI automations for WebFix",
+  "description": "Backend API and AI automations for PatchWork",
+
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {

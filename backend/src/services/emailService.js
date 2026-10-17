@@ -57,11 +57,11 @@ async function sendReporterConfirmation(report) {
     return;
   }
 
-  const statusUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/status/${report.id}`;
+  const statusUrl = `${process.env.FRONTEND_URL || 'https://patch-work-rho.vercel.app'}/status/${report.id}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-      <h2 style="color: #2b6cb0;">WebFix Community Issue Reported</h2>
+      <h2 style="color: #2b6cb0;">PatchWork Community Issue Reported</h2>
       <p>Hello <strong>${report.reporter_name}</strong>,</p>
       <p>Thank you for helping keep our community safe and well-maintained. Your report has been officially logged.</p>
       
@@ -76,14 +76,14 @@ async function sendReporterConfirmation(report) {
       <p>You can track the progress of this ticket anytime using the link below:</p>
       <p><a href="${statusUrl}" style="background-color: #3182ce; color: white; padding: 10px 18px; text-decoration: none; border-radius: 5px; display: inline-block;">View Ticket Status</a></p>
 
-      <p style="font-size: 12px; color: #718096; margin-top: 30px;">WebFix Automated Community Notification System</p>
+      <p style="font-size: 12px; color: #718096; margin-top: 30px;">PatchWork Automated Community Notification System</p>
     </div>
   `;
 
   return sendWithRetry({
-    from: `"WebFix Alert" <${process.env.GMAIL_USER || 'no-reply@webfix.local'}>`,
+    from: `"PatchWork Alert" <${process.env.GMAIL_USER || 'no-reply@patchwork.local'}>`,
     to: report.email,
-    subject: `[WebFix] Report Received - Ticket #${report.id}`,
+    subject: `[PatchWork] Report Received - Ticket #${report.id}`,
     text: `Your report #${report.id} for "${report.category}" at "${report.location}" has been recorded.`,
     html
   });
@@ -99,7 +99,7 @@ async function sendManagerAlert(report) {
     return;
   }
 
-  const dashboardUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard`;
+  const dashboardUrl = `${process.env.FRONTEND_URL || 'https://patch-work-rho.vercel.app'}/dashboard`;
 
   const mediaListHtml = (report.media_urls && report.media_urls.length > 0)
     ? report.media_urls.map((url, i) => `<li><a href="${url}" target="_blank">Attachment ${i + 1}</a></li>`).join('')
@@ -132,19 +132,20 @@ async function sendManagerAlert(report) {
       </p>
 
       <p style="font-size: 11px; color: #a0aec0; margin-top: 30px;">
-        * Note: This open report will automatically expire in 24 hours unless resolved sooner.
+        * Note: This open report will automatically expire in 24 hours.
       </p>
     </div>
   `;
 
   return sendWithRetry({
-    from: `"WebFix Urgent Alerts" <${process.env.GMAIL_USER || 'no-reply@webfix.local'}>`,
+    from: `"PatchWork Urgent Alerts" <${process.env.GMAIL_USER || 'no-reply@patchwork.local'}>`,
     to: managerEmail,
     subject: `🚨 [Action Required] New Report: ${report.category} at ${report.location} (#${report.id})`,
     text: `New Report #${report.id}: ${report.category} at ${report.location} by ${report.reporter_name} (${report.contact}).`,
     html
   });
 }
+
 
 /**
  * Sends report data to Make.com webhook for automated Gmail/email workflows
@@ -168,8 +169,9 @@ async function sendToMakeWebhook(report) {
       verification_status: report.verification?.status || 'unverified',
       manager_email: process.env.SOCIETY_MANAGER_EMAIL || 'manager@patchwork.local',
       created_at: report.created_at,
-      status_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/status/${report.id}`
+      status_url: `${process.env.FRONTEND_URL || 'https://patch-work-rho.vercel.app'}/status/${report.id}`
     };
+
 
     const response = await fetch(makeUrl, {
       method: 'POST',

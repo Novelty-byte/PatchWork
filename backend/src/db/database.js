@@ -62,7 +62,7 @@ function createReport({
   verification = { status: 'unverified', notes: 'Pending visual check' }
 }) {
   const now = new Date();
-  const id = 'WF-' + Date.now().toString().slice(-6);
+  const id = 'PW-' + Date.now().toString().slice(-6);
 
   const newReport = {
     id,
@@ -77,10 +77,9 @@ function createReport({
     status: 'open',
     verification,
     created_at: now.toISOString(),
-    // 24 hour deletion from dashboard rule
+    // Strictly deleted after 24 hours from the dashboard
     expires_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-    solved_at: null,
-    hidden_at: null
+    solved_at: null
   };
 
   reports.unshift(newReport);
@@ -94,24 +93,14 @@ function getReportById(id) {
 
 /**
  * Manager Dashboard Query:
- * Returns active reports adhering to the 24-hr & 12-hr rules:
- * 1. If NOT solved: visible for up to 24 hours from creation.
- * 2. If SOLVED: visible for 12 hours from solved_at, then auto-hidden.
+ * Reports remain on dashboard for 24 hours from creation, then auto-expire.
  */
 function getDashboardReports() {
   const now = Date.now();
+  const twentyFourHoursMs = 24 * 60 * 60 * 1000;
 
   return reports.filter(r => {
-    // If solved: check 12-hour removal window
-    if (r.status === 'solved' && r.solved_at) {
-      const solvedTime = new Date(r.solved_at).getTime();
-      const twelveHoursMs = 12 * 60 * 60 * 1000;
-      return (now - solvedTime) < twelveHoursMs;
-    }
-
-    // If still open: check 24-hour removal window
     const createdTime = new Date(r.created_at).getTime();
-    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
     return (now - createdTime) < twentyFourHoursMs;
   });
 }
@@ -120,15 +109,13 @@ function markReportSolved(id) {
   const report = reports.find(r => r.id === id);
   if (!report) return null;
 
-  const now = new Date();
   report.status = 'solved';
-  report.solved_at = now.toISOString();
-  // Solved rule overrides the 24h rule with a 12h countdown
-  report.expires_at = new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString();
+  report.solved_at = new Date().toISOString();
 
   saveDatabase();
   return report;
 }
+
 
 function updateVerification(id, verificationResult) {
   const report = reports.find(r => r.id === id);

@@ -1,15 +1,15 @@
-# 🌐 WebFix API Specification for Kavya (Frontend Lead)
+# 🌐 PatchWork API Specification for Kavya (Frontend Lead)
 
-The backend is deployed live at: **`https://patch-work-rho.vercel.app`**  
-*(For local testing, it runs on `http://localhost:5000`). All endpoints return JSON and accept CORS requests from anywhere.*
-
+The live production backend URL is:  
+👉 **`https://patch-work-rho.vercel.app`**  
+*(For local testing, it also runs on `http://localhost:5000`). All endpoints return JSON and accept CORS requests.*
 
 ---
 
 ## 1. Page 1: Main Report Page
 
 ### A. Photo / Video Upload
-- **Endpoint:** `POST http://localhost:5000/api/upload`
+- **Endpoint:** `POST https://patch-work-rho.vercel.app/api/upload`
 - **Headers:** `Content-Type: multipart/form-data`
 - **Body:** `media` (file input, up to 5 files, images or videos, max 25MB each)
 - **Response:**
@@ -18,13 +18,13 @@ The backend is deployed live at: **`https://patch-work-rho.vercel.app`**
     "success": true,
     "message": "1 file(s) uploaded successfully.",
     "media_urls": [
-      "http://localhost:5000/uploads/1729115500-123456789.jpg"
+      "https://patch-work-rho.vercel.app/uploads/1729115500-123456789.jpg"
     ]
   }
   ```
 
 ### B. Report Submission (From Chat, Voice, or Form)
-- **Endpoint:** `POST http://localhost:5000/api/reports`
+- **Endpoint:** `POST https://patch-work-rho.vercel.app/api/reports`
 - **Headers:** `Content-Type: application/json`
 - **Body:**
   ```json
@@ -36,7 +36,7 @@ The backend is deployed live at: **`https://patch-work-rho.vercel.app`**
     "category": "Broken Streetlight",
     "description": "Streetlight pole #4 has an exposed sparking wire",
     "severity": "high",
-    "media_urls": ["http://localhost:5000/uploads/1729115500-123456789.jpg"]
+    "media_urls": ["https://patch-work-rho.vercel.app/uploads/1729115500-123456789.jpg"]
   }
   ```
 - **Response:**
@@ -45,7 +45,7 @@ The backend is deployed live at: **`https://patch-work-rho.vercel.app`**
     "success": true,
     "message": "Report logged successfully and notification automations triggered.",
     "report": {
-      "id": "WF-526666",
+      "id": "PW-526666",
       "status": "open",
       "created_at": "...",
       "expires_at": "..."
@@ -54,12 +54,12 @@ The backend is deployed live at: **`https://patch-work-rho.vercel.app`**
   ```
 
 ### C. Voice Call (Vapi Integration)
-- **Endpoint:** `GET http://localhost:5000/api/vapi/config`
-- Returns the Vapi Assistant ID to initialize the `@vapi-ai/web` button:
+- **Endpoint:** `GET https://patch-work-rho.vercel.app/api/vapi/config`
+- Returns the Vapi Assistant ID so the frontend `@vapi-ai/web` button can initiate the call:
   ```json
   {
     "success": true,
-    "assistantId": "your_vapi_assistant_id",
+    "assistantId": "f99f9a56-214a-47a1-9449-1de9f2d5dbbe",
     "ready": true
   }
   ```
@@ -67,18 +67,19 @@ The backend is deployed live at: **`https://patch-work-rho.vercel.app`**
 ---
 
 ## 2. Page 2: Confirmation / Status Page
-- **Endpoint:** `GET http://localhost:5000/api/reports/:id`
-- **Example:** `GET http://localhost:5000/api/reports/WF-526666`
+- **Endpoint:** `GET https://patch-work-rho.vercel.app/api/reports/:id`
+- **Example:** `GET https://patch-work-rho.vercel.app/api/reports/PW-526666`
 - **Response:**
   ```json
   {
     "success": true,
     "report": {
-      "id": "WF-526666",
+      "id": "PW-526666",
       "status": "open",
       "category": "Broken Streetlight",
       "location": "Street 5 near Community Park",
-      "created_at": "2026-10-16T21:52:06.666Z"
+      "created_at": "2026-10-17T16:00:00.000Z",
+      "expires_at": "2026-10-18T16:00:00.000Z"
     }
   }
   ```
@@ -86,7 +87,7 @@ The backend is deployed live at: **`https://patch-work-rho.vercel.app`**
 ---
 
 ## 3. Page 3: Manager Dashboard
-- **Fetch Active Reports:** `GET http://localhost:5000/api/reports/manager/all`
-  - *Note:* This automatically filters out expired tickets (older than 24h if open, or older than 12h if solved).
-- **Mark Ticket Solved:** `PATCH http://localhost:5000/api/reports/manager/:id/solve`
-  - Starts the 12-hour countdown until the ticket disappears from the dashboard.
+- **Fetch Active Reports:** `GET https://patch-work-rho.vercel.app/api/reports/manager/all`
+  - *Note:* Reports automatically stay visible for 24 hours from creation, then auto-expire.
+- **Mark Ticket Solved:** `PATCH https://patch-work-rho.vercel.app/api/reports/manager/:id/solve`
+  - Updates report status to `solved`.

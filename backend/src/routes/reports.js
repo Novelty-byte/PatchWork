@@ -95,9 +95,10 @@ router.patch('/manager/:id/solve', (req, res) => {
 
   return res.json({
     success: true,
-    message: 'Report marked as solved. It will automatically disappear from the dashboard 12 hours from now.',
+    message: 'Report marked as solved successfully.',
     report: updated
   });
 });
+
 
 module.exports = router;
