@@ -52,8 +52,8 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       reports: '/api/reports',
+      community_dashboard: '/api/reports/dashboard',
       chat: '/api/chat',
-      manager_dashboard: '/api/reports/manager/all',
       vapi_config: '/api/vapi/config',
       upload: '/api/upload'
     }

@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
       ? { label: 'unclear', reason: 'Analyzing visual evidence...' }
       : { label: 'skipped', reason: 'No photo or video attached with this report.' };
 
-    const report = db.createReport({
+    const report = await db.createReport({
       reporter_name,
       contact,
       email,
@@ -59,8 +59,8 @@ router.post('/', async (req, res) => {
     // 2. Advisory visual verification runs asynchronously if media is attached
     if (media_urls && media_urls.length > 0) {
       verifyMediaReport(media_urls, category, description)
-        .then(verificationResult => {
-          db.updateVerification(report.id, verificationResult);
+        .then(async (verificationResult) => {
+          await db.updateVerification(report.id, verificationResult);
         })
         .catch(err => console.error('Verification error:', err.message));
     }
@@ -83,56 +83,67 @@ router.post('/', async (req, res) => {
  * @route   GET /api/reports/:id
  * @desc    Get report status and details by Ticket ID (Public Status Page)
  */
-router.get('/:id', (req, res) => {
-  const report = db.getReportById(req.params.id);
-  if (!report) {
-    return res.status(404).json({ success: false, error: 'Ticket not found.' });
+router.get('/:id', async (req, res) => {
+  try {
+    const report = await db.getReportById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ success: false, error: 'Ticket not found.' });
+    }
+    return res.json({ success: true, report: sanitizeForPublic(report) });
+  } catch (err) {
+    console.error('Error fetching report:', err);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve ticket.' });
   }
-  return res.json({ success: true, report: sanitizeForPublic(report) });
 });
 
 /**
  * Handler for Dashboard listing
  */
-const handleDashboard = (req, res) => {
-  const dashboardReports = db.getDashboardReports();
-  return res.json({
-    success: true,
-    count: dashboardReports.length,
-    reports: dashboardReports.map(sanitizeForPublic)
-  });
+const handleDashboard = async (req, res) => {
+  try {
+    const dashboardReports = await db.getDashboardReports();
+    return res.json({
+      success: true,
+      count: dashboardReports.length,
+      reports: dashboardReports.map(sanitizeForPublic)
+    });
+  } catch (err) {
+    console.error('Error fetching dashboard reports:', err);
+    return res.status(500).json({ success: false, error: 'Failed to load community dashboard.' });
+  }
 };
 
 /**
  * @route   GET /api/reports/dashboard
- * @route   GET /api/reports/manager/all (legacy alias)
  * @desc    Public community dashboard: open reports stay indefinitely; solved reports stay 12 hours
  */
 router.get('/dashboard', handleDashboard);
-router.get('/manager/all', handleDashboard);
 
 /**
  * Handler for marking report solved
  */
-const handleSolve = (req, res) => {
-  const updated = db.markReportSolved(req.params.id);
-  if (!updated) {
-    return res.status(404).json({ success: false, error: 'Report not found.' });
-  }
+const handleSolve = async (req, res) => {
+  try {
+    const updated = await db.markReportSolved(req.params.id);
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Report not found.' });
+    }
 
-  return res.json({
-    success: true,
-    message: 'Report marked as solved. It will disappear from the dashboard in 12 hours.',
-    report: sanitizeForPublic(updated)
-  });
+    return res.json({
+      success: true,
+      message: 'Report marked as solved. It will disappear from the dashboard in 12 hours.',
+      report: sanitizeForPublic(updated)
+    });
+  } catch (err) {
+    console.error('Error marking report solved:', err);
+    return res.status(500).json({ success: false, error: 'Failed to mark report as solved.' });
+  }
 };
 
 /**
  * @route   PATCH /api/reports/:id/solve
- * @route   PATCH /api/reports/manager/:id/solve (legacy alias)
  * @desc    One-click mark solved (triggers 12-hour removal countdown)
  */
 router.patch('/:id/solve', handleSolve);
-router.patch('/manager/:id/solve', handleSolve);
 
 module.exports = router;

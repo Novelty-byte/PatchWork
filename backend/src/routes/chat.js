@@ -128,7 +128,7 @@ router.post('/', async (req, res) => {
     let createdReport = null;
     if (aiResponseJson.is_complete && aiResponseJson.extracted_data) {
       const data = aiResponseJson.extracted_data;
-      createdReport = db.createReport({
+      createdReport = await db.createReport({
         reporter_name: data.reporter_name,
         contact: data.contact,
         email: data.email || '',

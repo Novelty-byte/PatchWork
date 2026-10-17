@@ -1,11 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const { supabase, isConfigured } = require('../services/supabaseService');
 
 const isVercel = Boolean(process.env.VERCEL);
 const DB_DIR = isVercel ? path.join('/tmp', 'data') : path.join(__dirname, '..', '..', 'data');
 const DB_FILE = path.join(DB_DIR, 'reports.json');
 
-// Ensure data directory exists safely
+// Ensure local data directory exists for fallback mode
 try {
   if (!fs.existsSync(DB_DIR)) {
     fs.mkdirSync(DB_DIR, { recursive: true });
@@ -14,8 +15,7 @@ try {
   console.warn('Notice: Running in ephemeral memory storage mode');
 }
 
-
-// In-memory cache synced with JSON storage
+// In-memory cache synced with storage
 let reports = [];
 
 function loadDatabase() {
@@ -28,7 +28,7 @@ function loadDatabase() {
       saveDatabase();
     }
   } catch (err) {
-    console.error('Error loading database:', err.message);
+    console.error('Error loading fallback database:', err.message);
     reports = [];
   }
 }
@@ -37,20 +37,17 @@ function saveDatabase() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(reports, null, 2), 'utf-8');
   } catch (err) {
-    console.error('Error saving database:', err.message);
+    console.error('Error saving fallback database:', err.message);
   }
 }
 
-// Initial load
+// Initial fallback load
 loadDatabase();
 
 /**
- * Report status lifecycle:
- * - 'open': Report newly created. Auto-expires from dashboard after 24 hours.
- * - 'solved': Manager marked it solved. Replaces 24-hr rule and auto-expires 12 hours after solved_at.
+ * Creates a new report and persists to Supabase (with fallback)
  */
-
-function createReport({
+async function createReport({
   reporter_name,
   contact,
   email,
@@ -81,12 +78,52 @@ function createReport({
     expires_at: null // Stays indefinitely until marked solved
   };
 
+  // Always update local memory cache
   reports.unshift(newReport);
   saveDatabase();
+
+  // Persist to Supabase if available
+  if (isConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .insert([newReport])
+        .select()
+        .single();
+
+      if (error) {
+        console.warn('⚠️ Supabase insert warning (using local store):', error.message);
+      } else if (data) {
+        return data;
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase network error on insert (using local store):', err.message);
+    }
+  }
+
   return newReport;
 }
 
-function getReportById(id) {
+/**
+ * Retrieve a report by ID from Supabase (or memory fallback)
+ */
+async function getReportById(id) {
+  if (isConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (!error && data) {
+        return data;
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase getReportById error, falling back to local store:', err.message);
+    }
+  }
+
   return reports.find(r => r.id === id) || null;
 }
 
@@ -95,48 +132,121 @@ function getReportById(id) {
  * - Unsolved reports stay on the dashboard indefinitely.
  * - Solved reports disappear 12 hours after being marked solved.
  */
-function getDashboardReports() {
+async function getDashboardReports() {
   const now = Date.now();
   const twelveHoursMs = 12 * 60 * 60 * 1000;
+  const twelveHoursAgoIso = new Date(now - twelveHoursMs).toISOString();
 
+  if (isConfigured && supabase) {
+    try {
+      // Fetch open reports, plus solved reports resolved within the last 12 hours
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .or(`status.eq.open,and(status.eq.solved,solved_at.gte.${twelveHoursAgoIso})`)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        return data;
+      } else if (error) {
+        console.warn('⚠️ Supabase getDashboardReports error, falling back to local store:', error.message);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase error on dashboard fetch:', err.message);
+    }
+  }
+
+  // Local fallback filter
   return reports.filter(r => {
     if (r.status === 'solved' && r.solved_at) {
       const solvedTime = new Date(r.solved_at).getTime();
       return (now - solvedTime) < twelveHoursMs;
     }
-    // Open reports stay visible
     return true;
   });
 }
 
-function markReportSolved(id) {
-  const report = reports.find(r => r.id === id);
-  if (!report) return null;
-
+/**
+ * Mark a report as solved and calculate the 12-hour expiration
+ */
+async function markReportSolved(id) {
   const now = new Date();
-  report.status = 'solved';
-  report.solved_at = now.toISOString();
-  // Disappears from dashboard 12 hours later
-  report.expires_at = new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString();
+  const solved_at = now.toISOString();
+  const expires_at = new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString();
 
-  saveDatabase();
-  return report;
+  // Update memory cache
+  const report = reports.find(r => r.id === id);
+  if (report) {
+    report.status = 'solved';
+    report.solved_at = solved_at;
+    report.expires_at = expires_at;
+    saveDatabase();
+  }
+
+  // Update Supabase
+  if (isConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .update({
+          status: 'solved',
+          solved_at,
+          expires_at
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        return data;
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase markReportSolved error:', err.message);
+    }
+  }
+
+  return report || null;
 }
 
-
-
-function updateVerification(id, verificationResult) {
-  const report = reports.find(r => r.id === id);
-  if (!report) return null;
-
-  report.verification = {
-    ...report.verification,
+/**
+ * Update advisory AI verification result
+ */
+async function updateVerification(id, verificationResult) {
+  const checked_at = new Date().toISOString();
+  const fullVerification = {
     ...verificationResult,
-    checked_at: new Date().toISOString()
+    checked_at
   };
 
-  saveDatabase();
-  return report;
+  // Update memory cache
+  const report = reports.find(r => r.id === id);
+  if (report) {
+    report.verification = {
+      ...report.verification,
+      ...fullVerification
+    };
+    saveDatabase();
+  }
+
+  // Update Supabase
+  if (isConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .update({ verification: fullVerification })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        return data;
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase updateVerification error:', err.message);
+    }
+  }
+
+  return report || null;
 }
 
 module.exports = {

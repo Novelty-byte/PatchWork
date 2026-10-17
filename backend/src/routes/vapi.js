@@ -33,7 +33,7 @@ router.post('/webhook', async (req, res) => {
       const args = toolCall?.function?.arguments || {};
 
       if (functionName === 'submit_community_report' || functionName === 'submit_report') {
-        const report = db.createReport({
+        const report = await db.createReport({
           reporter_name: args.reporter_name || 'Resident (Voice Call)',
           contact: args.contact || 'From Voice Session',
           email: args.email || '',
@@ -64,7 +64,7 @@ router.post('/webhook', async (req, res) => {
       const structuredData = message.analysis?.structuredData || {};
 
       if (summary) {
-        const report = db.createReport({
+        const report = await db.createReport({
           reporter_name: structuredData.reporter_name || 'Voice Caller',
           contact: structuredData.contact || 'Provided in call',
           email: structuredData.email || '',
