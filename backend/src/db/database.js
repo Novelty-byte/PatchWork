@@ -1,13 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
-const DB_DIR = path.join(__dirname, '..', '..', 'data');
+const isVercel = Boolean(process.env.VERCEL);
+const DB_DIR = isVercel ? path.join('/tmp', 'data') : path.join(__dirname, '..', '..', 'data');
 const DB_FILE = path.join(DB_DIR, 'reports.json');
 
-// Ensure data directory exists
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+// Ensure data directory exists safely
+try {
+  if (!fs.existsSync(DB_DIR)) {
+    fs.mkdirSync(DB_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Notice: Running in ephemeral memory storage mode');
 }
+
 
 // In-memory cache synced with JSON storage
 let reports = [];

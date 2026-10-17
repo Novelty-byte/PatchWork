@@ -1,6 +1,8 @@
 # 🌐 WebFix API Specification for Kavya (Frontend Lead)
 
-The backend server runs on `http://localhost:5000` (or the deployed backend URL). All endpoints return JSON and accept CORS requests from the frontend.
+The backend is deployed live at: **`https://patch-work-rho.vercel.app`**  
+*(For local testing, it runs on `http://localhost:5000`). All endpoints return JSON and accept CORS requests from anywhere.*
+
 
 ---
 

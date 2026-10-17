@@ -43,6 +43,22 @@ const reportLimiter = rateLimit({
 
 app.use('/api', generalLimiter);
 
+// Root landing page
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    project: 'PatchWork Community Reporting System',
+    message: 'Backend server is running live!',
+    endpoints: {
+      health: '/api/health',
+      reports: '/api/reports',
+      manager_dashboard: '/api/reports/manager/all',
+      vapi_config: '/api/vapi/config',
+      upload: '/api/upload'
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
@@ -51,6 +67,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
 
 // Mount Routes
 const reportsRouter = require('./routes/reports');
