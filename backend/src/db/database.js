@@ -77,9 +77,8 @@ function createReport({
     status: 'open',
     verification,
     created_at: now.toISOString(),
-    // Strictly deleted after 24 hours from the dashboard
-    expires_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-    solved_at: null
+    solved_at: null,
+    expires_at: null // Stays indefinitely until marked solved
   };
 
   reports.unshift(newReport);
@@ -92,16 +91,21 @@ function getReportById(id) {
 }
 
 /**
- * Manager Dashboard Query:
- * Reports remain on dashboard for 24 hours from creation, then auto-expire.
+ * Community Dashboard Query:
+ * - Unsolved reports stay on the dashboard indefinitely.
+ * - Solved reports disappear 12 hours after being marked solved.
  */
 function getDashboardReports() {
   const now = Date.now();
-  const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+  const twelveHoursMs = 12 * 60 * 60 * 1000;
 
   return reports.filter(r => {
-    const createdTime = new Date(r.created_at).getTime();
-    return (now - createdTime) < twentyFourHoursMs;
+    if (r.status === 'solved' && r.solved_at) {
+      const solvedTime = new Date(r.solved_at).getTime();
+      return (now - solvedTime) < twelveHoursMs;
+    }
+    // Open reports stay visible
+    return true;
   });
 }
 
@@ -109,12 +113,16 @@ function markReportSolved(id) {
   const report = reports.find(r => r.id === id);
   if (!report) return null;
 
+  const now = new Date();
   report.status = 'solved';
-  report.solved_at = new Date().toISOString();
+  report.solved_at = now.toISOString();
+  // Disappears from dashboard 12 hours later
+  report.expires_at = new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString();
 
   saveDatabase();
   return report;
 }
+
 
 
 function updateVerification(id, verificationResult) {

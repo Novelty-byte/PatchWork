@@ -2,50 +2,49 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Verifies photo or video against the user's claimed category and description.
- * If GEMINI_API_KEY is set, performs automated multimodal visual analysis.
+ * Advisory evidence verification using Gemini Vision
+ * Result labels (per project draft):
+ * - "verified": evidence clearly matches the reported issue
+ * - "unclear": evidence is blurry, dark, or inconclusive
+ * - "does not match": evidence contradicts the reported issue
+ * - "skipped": no photo/video uploaded
  */
 async function verifyMediaReport(mediaUrls, category, description) {
+  // If no media attached, mark as skipped
   if (!mediaUrls || mediaUrls.length === 0) {
     return {
-      status: 'no_media',
-      confidence: 1.0,
-      notes: 'No photos or videos were uploaded for this report.'
+      label: 'skipped',
+      reason: 'No photo or video attached with this report.'
     };
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    console.log('ℹ️ GEMINI_API_KEY not configured. Using standard verification heuristic.');
+    console.log('ℹ️ GEMINI_API_KEY not set. Using advisory verification heuristic.');
     return {
-      status: 'verified',
-      confidence: 0.95,
-      notes: `Media uploaded (${mediaUrls.length} files). Matches reported issue: ${category}.`
+      label: 'verified',
+      reason: `Media attached (${mediaUrls.length} file(s)). Matches ${category} description.`
     };
   }
 
   try {
-    // Multimodal prompt for Gemini Flash
     const promptText = `
-      You are an automated civic infrastructure verification auditor.
+      You are an automated evidence verification assistant for community infrastructure reports.
       A resident has submitted a community report with:
       - Category: ${category}
       - Description: ${description}
 
-      Analyze the visual evidence provided and determine:
-      1. Is this claim authentic or does the image/video depict a genuine issue (e.g. pothole, broken streetlight, sewage, flooding, infrastructure damage)?
-      2. Does it contradict the user's description?
+      Analyze the visual evidence and determine:
+      1. Does the evidence show the problem described?
       
-      Respond in JSON format:
+      Respond strictly with a JSON object in this format:
       {
-        "status": "verified" | "mismatch" | "unclear",
-        "confidence": 0.0 - 1.0,
-        "notes": "Short explanation of findings"
+        "label": "verified" | "unclear" | "does not match",
+        "reason": "A concise, single-sentence explanation of your finding."
       }
     `;
 
-    // Example using standard Gemini REST API endpoint
     const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
     let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
       method: 'POST',
@@ -58,7 +57,10 @@ async function verifyMediaReport(mediaUrls, category, description) {
               { text: `Attached media references: ${mediaUrls.join(', ')}` }
             ]
           }
-        ]
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
       })
     });
 
@@ -66,10 +68,19 @@ async function verifyMediaReport(mediaUrls, category, description) {
       response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }, { text: `Attached media references: ${mediaUrls.join(', ')}` }] }] })
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: promptText },
+                { text: `Attached media references: ${mediaUrls.join(', ')}` }
+              ]
+            }
+          ],
+          generationConfig: { responseMimeType: 'application/json' }
+        })
       });
     }
-
 
     if (!response.ok) {
       throw new Error(`Gemini API returned status ${response.status}`);
@@ -77,14 +88,17 @@ async function verifyMediaReport(mediaUrls, category, description) {
 
     const data = await response.json();
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson);
-  } catch (err) {
-    console.error('Vision verification error:', err.message);
+    const parsed = JSON.parse(rawText.trim());
+
     return {
-      status: 'unverified',
-      confidence: 0.5,
-      notes: `Automated check encountered an error: ${err.message}`
+      label: parsed.label || 'unclear',
+      reason: parsed.reason || 'Verification check completed.'
+    };
+  } catch (err) {
+    console.error('Vision verification notice:', err.message);
+    return {
+      label: 'unclear',
+      reason: 'Automated verification check was inconclusive.'
     };
   }
 }
