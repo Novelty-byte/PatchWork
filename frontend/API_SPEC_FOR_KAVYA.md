@@ -95,45 +95,64 @@ Kavya can install the official Vapi Web SDK in her frontend:
 ```bash
 npm install @vapi-ai/web
 ```
+
+> **Security Note:** Never put the private `VAPI_API_KEY` in frontend code. For web calling, Vapi uses your **Public Key** (from Vapi Dashboard $\rightarrow$ Account $\rightarrow$ API Keys $\rightarrow$ Public Key) and the **Assistant ID**. These can be loaded via `NEXT_PUBLIC_*` environment variables or fetched dynamically from `GET /api/vapi/config`.
+
 Example React button component:
 ```jsx
 import React, { useState, useEffect } from 'react';
 import Vapi from '@vapi-ai/web';
 
-// Vapi Public Key & Assistant ID
-const vapi = new Vapi('e49651ee-f8d4-46f5-a8ad-722f32fb5aa4');
-const ASSISTANT_ID = 'f99f9a56-214a-47a1-9449-1de9f2d5dbbe';
-
 export function VoiceCallButton() {
+  const [vapi, setVapi] = useState(null);
   const [isCalling, setIsCalling] = useState(false);
+  const [assistantId, setAssistantId] = useState(null);
 
   useEffect(() => {
-    vapi.on('call-start', () => setIsCalling(true));
-    vapi.on('call-end', () => setIsCalling(false));
-    vapi.on('error', (e) => {
-      console.error(e);
-      setIsCalling(false);
-    });
+    // 1. Fetch public voice config from backend
+    fetch('https://patch-work-rho.vercel.app/api/vapi/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.publicKey && data.assistantId) {
+          const client = new Vapi(data.publicKey);
+          client.on('call-start', () => setIsCalling(true));
+          client.on('call-end', () => setIsCalling(false));
+          client.on('error', (e) => {
+            console.error('Vapi Voice error:', e);
+            setIsCalling(false);
+          });
+          setVapi(client);
+          setAssistantId(data.assistantId);
+        }
+      })
+      .catch(err => console.error('Failed to load Vapi voice config:', err));
+
+    return () => {
+      if (vapi) vapi.stop();
+    };
   }, []);
 
   const toggleCall = () => {
+    if (!vapi || !assistantId) return;
+
     if (isCalling) {
       vapi.stop();
     } else {
-      vapi.start(ASSISTANT_ID);
+      vapi.start(assistantId);
     }
   };
 
   return (
     <button 
       onClick={toggleCall}
+      disabled={!vapi}
       style={{
         backgroundColor: isCalling ? '#e53e3e' : '#3182ce',
         color: 'white',
         padding: '12px 24px',
         borderRadius: '8px',
         border: 'none',
-        cursor: 'pointer',
+        cursor: vapi ? 'pointer' : 'not-allowed',
         fontWeight: 'bold'
       }}
     >

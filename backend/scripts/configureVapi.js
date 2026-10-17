@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
-const apiKey = process.env.VAPI_API_KEY || 'e49651ee-f8d4-46f5-a8ad-722f32fb5aa4';
+const apiKey = process.env.VAPI_API_KEY;
 const assistantId = process.env.VAPI_ASSISTANT_ID || 'f99f9a56-214a-47a1-9449-1de9f2d5dbbe';
 const serverUrl = 'https://patch-work-rho.vercel.app/api/vapi/webhook';
 

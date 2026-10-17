@@ -10,6 +10,7 @@ const { dispatchReportNotifications } = require('../services/emailService');
 router.get('/config', (req, res) => {
   return res.json({
     success: true,
+    publicKey: process.env.VAPI_PUBLIC_KEY || null,
     assistantId: process.env.VAPI_ASSISTANT_ID || null,
     ready: Boolean(process.env.VAPI_ASSISTANT_ID)
   });
