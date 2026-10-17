@@ -88,7 +88,8 @@ router.post('/', async (req, res) => {
         parts: [{ text: message }]
       });
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+      let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -99,13 +100,23 @@ router.post('/', async (req, res) => {
         })
       });
 
+      // Graceful fallback to 2.5/2.0 if 3.5 is not yet in the user's specific tier
+      if (!response.ok && response.status === 404) {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents, generationConfig: { responseMimeType: 'application/json' } })
+        });
+      }
+
       if (response.ok) {
         const data = await response.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         aiResponseJson = JSON.parse(rawText);
       } else {
-        console.warn('Gemini API call returned non-200, using conversational engine fallback.');
+        console.warn(`Gemini API call returned status ${response.status}, using conversational engine fallback.`);
       }
+
     }
 
     // Smart conversational fallback engine if GEMINI_API_KEY is not yet supplied

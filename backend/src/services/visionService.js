@@ -46,7 +46,8 @@ async function verifyMediaReport(mediaUrls, category, description) {
     `;
 
     // Example using standard Gemini REST API endpoint
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+    let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -54,13 +55,21 @@ async function verifyMediaReport(mediaUrls, category, description) {
           {
             parts: [
               { text: promptText },
-              // In production with public storage, image URLs or base64 inlineData can be passed here
               { text: `Attached media references: ${mediaUrls.join(', ')}` }
             ]
           }
         ]
       })
     });
+
+    if (!response.ok && response.status === 404) {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }, { text: `Attached media references: ${mediaUrls.join(', ')}` }] }] })
+      });
+    }
+
 
     if (!response.ok) {
       throw new Error(`Gemini API returned status ${response.status}`);
