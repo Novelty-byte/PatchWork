@@ -80,23 +80,6 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * @route   GET /api/reports/:id
- * @desc    Get report status and details by Ticket ID (Public Status Page)
- */
-router.get('/:id', async (req, res) => {
-  try {
-    const report = await db.getReportById(req.params.id);
-    if (!report) {
-      return res.status(404).json({ success: false, error: 'Ticket not found.' });
-    }
-    return res.json({ success: true, report: sanitizeForPublic(report) });
-  } catch (err) {
-    console.error('Error fetching report:', err);
-    return res.status(500).json({ success: false, error: 'Failed to retrieve ticket.' });
-  }
-});
-
-/**
  * Handler for Dashboard listing
  */
 const handleDashboard = async (req, res) => {
@@ -118,6 +101,23 @@ const handleDashboard = async (req, res) => {
  * @desc    Public community dashboard: open reports stay indefinitely; solved reports stay 12 hours
  */
 router.get('/dashboard', handleDashboard);
+
+/**
+ * @route   GET /api/reports/:id
+ * @desc    Get report status and details by Ticket ID (Public Status Page)
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const report = await db.getReportById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ success: false, error: 'Ticket not found.' });
+    }
+    return res.json({ success: true, report: sanitizeForPublic(report) });
+  } catch (err) {
+    console.error('Error fetching report:', err);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve ticket.' });
+  }
+});
 
 /**
  * Handler for marking report solved
