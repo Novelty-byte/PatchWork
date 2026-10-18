@@ -155,14 +155,16 @@ async function sendToMakeWebhook(report) {
   if (!makeUrl) return false;
 
   try {
-    // Ensure reporter_email is a clean valid email address so Gmail module doesn't fail
+    // Ensure reporter_email is always a clean valid email address so Gmail module doesn't fail
     const emailMatch = (report.email || '').match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    const validReporterEmail = emailMatch ? emailMatch[0].toLowerCase() : (process.env.SOCIETY_MANAGER_EMAIL || '');
+    const fallbackEmail = process.env.SOCIETY_MANAGER_EMAIL || 'muhammadhuzaifakhan.pk@gmail.com';
+    const validReporterEmail = emailMatch ? emailMatch[0].toLowerCase() : fallbackEmail;
 
     const payload = {
       ticket_id: report.id,
       reporter_name: report.reporter_name || 'Resident',
       reporter_email: validReporterEmail,
+      has_reporter_email: Boolean(emailMatch),
       reporter_contact: report.contact || 'Not provided',
       location: report.location || 'Community Area',
       category: report.category || 'General Issue',
@@ -171,7 +173,7 @@ async function sendToMakeWebhook(report) {
       status: report.status || 'open',
       media_urls: report.media_urls || [],
       verification_status: report.verification?.status || 'unverified',
-      manager_email: process.env.SOCIETY_MANAGER_EMAIL || 'manager@patchwork.local',
+      manager_email: process.env.SOCIETY_MANAGER_EMAIL || 'muhammadhuzaifakhan.pk@gmail.com',
       created_at: report.created_at,
       status_url: `${process.env.FRONTEND_URL || 'https://patch-work-rho.vercel.app'}/status/${report.id}`
     };

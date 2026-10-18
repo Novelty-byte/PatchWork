@@ -75,36 +75,42 @@ router.post('/', async (req, res) => {
 
     if (apiKey) {
       // Format chat history for Gemini API
-      const contents = [
-        {
-          role: 'user',
-          parts: [{ text: SYSTEM_PROMPT + "\n\nLet's begin. Acknowledge instructions." }]
-        },
-        {
-          role: 'model',
-          parts: [{ text: JSON.stringify({ reply: "Hello! Welcome to PatchWork Community Support. What issue would you like to report today?", is_complete: false, extracted_data: null }) }]
+      const rawContents = [];
+      (history || []).forEach(item => {
+        const role = (item.sender === 'user' || item.role === 'user') ? 'user' : 'model';
+        if (item.text && item.text.trim()) {
+          rawContents.push({ role, parts: [{ text: item.text.trim() }] });
         }
-      ];
+      });
+      rawContents.push({ role: 'user', parts: [{ text: message }] });
 
-      // Append existing conversation history
-      history.forEach(item => {
-        contents.push({
-          role: item.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: item.text }]
-        });
+      // Gemini requires contents to strictly alternate roles and start with 'user'
+      const contents = [];
+      rawContents.forEach(entry => {
+        if (contents.length === 0) {
+          if (entry.role === 'user') {
+            contents.push(entry);
+          }
+        } else {
+          const last = contents[contents.length - 1];
+          if (last.role === entry.role) {
+            last.parts[0].text += `\n${entry.parts[0].text}`;
+          } else {
+            contents.push(entry);
+          }
+        }
       });
 
-      // Append current user message
-      contents.push({
-        role: 'user',
-        parts: [{ text: message }]
-      });
+      if (contents.length === 0) {
+        contents.push({ role: 'user', parts: [{ text: message }] });
+      }
 
-      const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+      const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
       let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
           contents,
           generationConfig: {
             responseMimeType: 'application/json'
@@ -114,9 +120,10 @@ router.post('/', async (req, res) => {
 
       if (response.ok) {
         const data = await response.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawText) {
           try {
+            rawText = rawText.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
             aiResponseJson = JSON.parse(rawText);
             // Sanitize extracted email
             if (aiResponseJson.extracted_data && aiResponseJson.extracted_data.email) {
@@ -193,17 +200,88 @@ router.post('/', async (req, res) => {
  * Robust fallback assistant for development/offline testing
  */
 function processFallbackConversation(message, history) {
-  const userMessages = history
-    .filter(h => h.sender === 'user' || h.role === 'user')
-    .map(h => h.text);
-  userMessages.push(message);
+  // Normalize history into alternating turns
+  const turns = [];
+  (history || []).forEach(h => {
+    turns.push({
+      role: (h.sender === 'user' || h.role === 'user') ? 'user' : 'bot',
+      text: h.text || ''
+    });
+  });
+  turns.push({ role: 'user', text: message });
 
+  const userMessages = turns.filter(t => t.role === 'user').map(t => t.text.trim());
   const allText = userMessages.join(' ');
-  const emailMatch = allText.match(EMAIL_REGEX);
-  const phoneMatch = allText.match(PHONE_REGEX);
 
-  // 1. Determine problem description and category from initial messages
-  const initialProblem = userMessages[0] || message;
+  // 1. Extract clean email
+  const emailMatch = allText.match(EMAIL_REGEX);
+  const cleanEmail = emailMatch ? emailMatch[0].toLowerCase() : null;
+
+  // 2. Extract phone
+  const phoneMatch = allText.match(PHONE_REGEX);
+  const cleanPhone = phoneMatch ? phoneMatch[0].trim() : 'Not provided';
+
+  // 3. Extract reporter name
+  let reporterName = null;
+  // Strategy A: regex
+  const namePattern = /(?:my name is|i am|this is|i'm)\s+([A-Za-z\s]+?)(?:[.,;\n]|$|and\s|my\s|email\s|phone\s|\d)/i;
+  const nameMatch = allText.match(namePattern);
+  if (nameMatch && nameMatch[1].trim().length > 1) {
+    reporterName = nameMatch[1].trim().replace(/[.,!]/g, '');
+  }
+
+  // Strategy B: If bot asked for name, the next user message is the name
+  if (!reporterName) {
+    for (let i = 0; i < turns.length - 1; i++) {
+      if (turns[i].role === 'bot' && /name/i.test(turns[i].text)) {
+        const candidate = turns[i + 1].text.trim().replace(/[.,!]/g, '');
+        if (candidate && !candidate.includes('@') && candidate.length < 50 && !/\d/.test(candidate)) {
+          reporterName = candidate;
+          break;
+        }
+      }
+    }
+  }
+
+  // Strategy C: Any short user message without @, digits, or issue keywords
+  if (!reporterName) {
+    const candidate = userMessages.find(m => {
+      const clean = m.replace(/[.,!]/g, '').trim();
+      return clean.length >= 2 &&
+        clean.length <= 30 &&
+        !clean.includes('@') &&
+        !/\d/.test(clean) &&
+        !/(pothole|street|road|light|sewage|drain|flood|near|beside|crossing|flyover)/i.test(clean);
+    });
+    if (candidate) reporterName = candidate.replace(/[.,!]/g, '').trim();
+  }
+
+  // 4. Extract location
+  let location = null;
+  const locationClues = ['street', 'road', 'block', 'sector', 'near', 'outside', 'gate', 'lane', 'avenue', 'behind', 'opposite', 'corner', 'beside', 'flyover', 'crossing'];
+  // Strategy A: If bot asked for location, next user message is location
+  for (let i = 0; i < turns.length - 1; i++) {
+    if (turns[i].role === 'bot' && /location|where/i.test(turns[i].text)) {
+      const candidate = turns[i + 1].text.trim();
+      if (candidate && !candidate.includes('@') && !/my name is/i.test(candidate)) {
+        location = candidate.replace(/my name is.*/i, '').replace(/email.*/i, '').trim();
+        break;
+      }
+    }
+  }
+
+  // Strategy B: Clue matching
+  if (!location) {
+    for (const msg of userMessages) {
+      const lmsg = msg.toLowerCase();
+      if (locationClues.some(clue => lmsg.includes(clue))) {
+        location = msg.replace(/my name is.*/i, '').replace(/email.*/i, '').trim();
+        break;
+      }
+    }
+  }
+
+  // 5. Determine category & description
   let category = 'Other Community Issue';
   const lowerAll = allText.toLowerCase();
   if (lowerAll.includes('light') || lowerAll.includes('lamp') || lowerAll.includes('pole')) {
@@ -218,30 +296,13 @@ function processFallbackConversation(message, history) {
     category = 'Park / Building Infrastructure';
   }
 
-  // 2. Check for location
-  let location = null;
-  const locationClues = ['street', 'road', 'block', 'sector', 'near', 'outside', 'gate', 'lane', 'avenue', 'behind', 'opposite', 'corner'];
-  for (const msg of userMessages) {
-    const lmsg = msg.toLowerCase();
-    if (locationClues.some(clue => lmsg.includes(clue))) {
-      location = msg.replace(/my name is.*/i, '').replace(/email.*/i, '').trim();
-      break;
-    }
+  const initialProblem = userMessages[0] || message;
+  let cleanDescription = initialProblem;
+  if (cleanDescription.length < 10) {
+    const descriptiveMsg = userMessages.find(m => m.length > 8 && !m.includes('@') && m !== location && m !== reporterName);
+    if (descriptiveMsg) cleanDescription = descriptiveMsg;
   }
 
-  // 3. Check for name
-  let reporterName = null;
-  const namePattern = /(?:my name is|i am|this is|i'm)\s+([A-Za-z\s]+?)(?:[.,;\n]|$|and\s|my\s|email\s|phone\s|\d)/i;
-  const nameMatch = allText.match(namePattern);
-  if (nameMatch && nameMatch[1].trim().length > 1) {
-    reporterName = nameMatch[1].trim();
-  } else if (userMessages.length >= 3 && !allText.includes('@')) {
-    // If user provided a short message that looks like a name
-    const lastShort = userMessages.find(m => m.split(' ').length <= 3 && !m.includes('@') && !/\d/.test(m));
-    if (lastShort) reporterName = lastShort.trim();
-  }
-
-  // Conversational flow enforcement:
   // Step A: Need location
   if (!location) {
     return {
@@ -261,7 +322,7 @@ function processFallbackConversation(message, history) {
   }
 
   // Step C: Need MANDATORY email
-  if (!emailMatch) {
+  if (!cleanEmail) {
     return {
       reply: `Thanks ${reporterName}. Could you please provide your email address? We need this to send your ticket confirmation and status updates.`,
       is_complete: false,
@@ -270,26 +331,17 @@ function processFallbackConversation(message, history) {
   }
 
   // Step D: Complete - all details collected!
-  const cleanEmail = emailMatch[0].toLowerCase();
-  const cleanPhone = phoneMatch ? phoneMatch[0].trim() : 'Not provided';
-  const cleanLocation = location || 'Community Area';
-
-  // Description must strictly describe the problem, NOT the user's contact details
-  let cleanDescription = initialProblem;
-  // If the initial problem was just "hello", find the first message that describes a problem
-  if (cleanDescription.length < 10) {
-    const descriptiveMsg = userMessages.find(m => m.length > 8 && !m.includes('@'));
-    if (descriptiveMsg) cleanDescription = descriptiveMsg;
-  }
+  const cleanPhoneStr = cleanPhone;
+  const cleanLocationStr = location || 'Community Area';
 
   return {
-    reply: `Thank you ${reporterName}! I have officially logged your report for ${category} at ${cleanLocation}. A confirmation email has been dispatched to ${cleanEmail}.`,
+    reply: `Thank you ${reporterName}! I have officially logged your report for ${category} at ${cleanLocationStr}. A confirmation email has been dispatched to ${cleanEmail}.`,
     is_complete: true,
     extracted_data: {
       reporter_name: reporterName,
-      contact: cleanPhone,
+      contact: cleanPhoneStr,
       email: cleanEmail,
-      location: cleanLocation,
+      location: cleanLocationStr,
       category: category,
       description: cleanDescription,
       severity: 'medium'

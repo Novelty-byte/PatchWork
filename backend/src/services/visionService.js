@@ -75,7 +75,7 @@ async function verifyMediaReport(mediaUrls, category, description) {
       }
     }
 
-    const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
     let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -93,8 +93,9 @@ async function verifyMediaReport(mediaUrls, category, description) {
     }
 
     const data = await response.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = JSON.parse(rawText.trim());
+    let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    rawText = rawText.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+    const parsed = JSON.parse(rawText);
 
     const validLabels = ['verified', 'unclear', 'does not match'];
     const finalLabel = validLabels.includes(parsed.label) ? parsed.label : 'unclear';
