@@ -87,6 +87,11 @@ Rules:
                   type: "string",
                   enum: ["low", "medium", "high", "critical"],
                   description: "Estimated urgency or severity"
+                },
+                media_urls: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "List of photo or video URLs attached by the resident"
                 }
               },
               required: ["reporter_name", "contact", "location", "category", "description"]

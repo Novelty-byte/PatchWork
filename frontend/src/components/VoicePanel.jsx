@@ -25,7 +25,7 @@ function Transcript({ lines, label, status }) {
   );
 }
 
-export default function VoicePanel({ notify }) {
+export default function VoicePanel({ notify, mediaUrls = [] }) {
   const navigate = useNavigate();
   const [state, setState] = useState('idle'); // idle | permission | connecting | active | ended
   const [seconds, setSeconds] = useState(0);
@@ -91,7 +91,20 @@ export default function VoicePanel({ notify }) {
       const vapi = new Vapi(cfg.publicKey);
       vapiRef.current = vapi;
       vapi.on('call-start', () => setState('active'));
-      vapi.on('call-end', () => setState((s) => (s === 'idle' ? 'idle' : 'ended')));
+      vapi.on('call-end', async () => {
+        setState((s) => (s === 'idle' ? 'idle' : 'ended'));
+        // Fallback: if transcript regex didn't catch ticket, query latest ticket from backend
+        try {
+          const apiBase = (import.meta.env.VITE_API_URL || 'https://patch-work-rho.vercel.app').replace(/\/$/, '');
+          const res = await fetch(`${apiBase}/api/vapi/latest-ticket`);
+          const d = await res.json();
+          if (d?.ticket_id) {
+            setTicket((prev) => prev || d.ticket_id);
+          }
+        } catch {
+          /* ignore fallback error */
+        }
+      });
       vapi.on('message', (m) => {
         if (m.type === 'transcript' && m.transcriptType === 'final') {
           addLine({ role: m.role, text: m.transcript });
@@ -104,7 +117,14 @@ export default function VoicePanel({ notify }) {
         notify({ variant: 'error', title: 'The call was interrupted', text: 'Check your connection and try again, or use Chat.' });
         setState('idle');
       });
-      await vapi.start(cfg.assistantId);
+
+      const startOverrides = {};
+      if (mediaUrls && mediaUrls.length > 0) {
+        startOverrides.variableValues = {
+          media_urls: mediaUrls.join(',')
+        };
+      }
+      await vapi.start(cfg.assistantId, startOverrides);
     } catch (err) {
       notify({ variant: 'error', title: "Couldn't start the call", text: err.message });
       setState('idle');

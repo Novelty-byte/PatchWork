@@ -15,11 +15,18 @@ function sanitizeForPublic(report) {
   return safe;
 }
 
+const applySubmissionLimiter = (req, res, next) => {
+  if (req.app?.locals?.submissionLimiter) {
+    return req.app.locals.submissionLimiter(req, res, next);
+  }
+  next();
+};
+
 /**
  * @route   POST /api/reports
  * @desc    Submit a new community report (Web Form, Chatbot, or Voice)
  */
-router.post('/', async (req, res) => {
+router.post('/', applySubmissionLimiter, async (req, res) => {
   try {
     const {
       reporter_name,

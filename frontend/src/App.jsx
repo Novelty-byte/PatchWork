@@ -192,7 +192,7 @@ export default function App() {
             </div>
 
             <div hidden={tab !== 'voice'}>
-              <VoicePanel notify={notify} />
+              <VoicePanel notify={notify} mediaUrls={mediaUrls} />
             </div>
           </section>
         </div>

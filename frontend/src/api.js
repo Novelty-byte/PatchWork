@@ -61,6 +61,12 @@ export async function getVapiConfig() {
   return request('/api/vapi/config');
 }
 
+// GET /api/vapi/latest-ticket -> { success, ticket_id }
+export async function getLatestVoiceTicket(callId) {
+  const query = callId ? `?call_id=${encodeURIComponent(callId)}` : '';
+  return request(`/api/vapi/latest-ticket${query}`);
+}
+
 // POST /api/chat { message, history:[{sender:'bot'|'user', text}], media_urls }
 //   -> { reply, is_complete, report: null | { id, ... } }
 export async function sendChat({ message, history, media_urls }) {
