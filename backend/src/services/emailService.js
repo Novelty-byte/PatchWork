@@ -155,16 +155,20 @@ async function sendToMakeWebhook(report) {
   if (!makeUrl) return false;
 
   try {
+    // Ensure reporter_email is a clean valid email address so Gmail module doesn't fail
+    const emailMatch = (report.email || '').match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    const validReporterEmail = emailMatch ? emailMatch[0].toLowerCase() : (process.env.SOCIETY_MANAGER_EMAIL || '');
+
     const payload = {
       ticket_id: report.id,
-      reporter_name: report.reporter_name,
-      reporter_email: report.email,
-      reporter_contact: report.contact,
-      location: report.location,
-      category: report.category,
-      description: report.description,
-      severity: report.severity,
-      status: report.status,
+      reporter_name: report.reporter_name || 'Resident',
+      reporter_email: validReporterEmail,
+      reporter_contact: report.contact || 'Not provided',
+      location: report.location || 'Community Area',
+      category: report.category || 'General Issue',
+      description: report.description || 'Community issue reported.',
+      severity: report.severity || 'medium',
+      status: report.status || 'open',
       media_urls: report.media_urls || [],
       verification_status: report.verification?.status || 'unverified',
       manager_email: process.env.SOCIETY_MANAGER_EMAIL || 'manager@patchwork.local',
