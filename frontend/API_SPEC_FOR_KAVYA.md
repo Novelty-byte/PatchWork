@@ -1,8 +1,17 @@
-# 🌐 PatchWork API Specification for Kavya (Frontend Lead)
+# 🌐 PatchWork Frontend Specification for Kavya (Frontend Lead)
 
 The live production backend URL is:  
 👉 **`https://patch-work-rho.vercel.app`**  
 *(For local testing, it also runs on `http://localhost:5000`). All endpoints return JSON and accept CORS requests.*
+
+---
+
+## 💡 Core UX Concept: Zero-Form AI Intake
+> **Important Note for Kavya:**  
+> **Do NOT build a traditional multi-field web form** (no inputs for category, description, address, name, etc.).  
+> PatchWork replaces tedious forms with an effortless 2-step AI flow:
+> 1. **Step 1:** Resident uploads photos or video (or skips media).
+> 2. **Step 2:** Resident chooses **"Chat with AI"** OR **"Voice Call"** to describe the problem and provide their name and contact info. The AI structures and logs the ticket automatically!
 
 ---
 
@@ -11,99 +20,99 @@ Per the project draft: The resident's contact phone number and email are **never
 
 ---
 
-## 1. Page 1: Main Report Page
+## 📄 1. Page 1: Main Report Page (`/`)
 
-### A. Photo / Video Upload
+### Step 1: Photo / Video Upload
+The resident attaches photos or videos first (or can proceed without media).
 - **Endpoint:** `POST https://patch-work-rho.vercel.app/api/upload`
 - **Headers:** `Content-Type: multipart/form-data`
-- **Body:** `media` (file input, up to 5 files, photos or video, max 25MB each)
+- **Body:** `media` (file input, up to 5 files, camera capture on mobile, max 25MB each)
 - **Response:**
   ```json
   {
     "success": true,
     "message": "1 file(s) uploaded successfully.",
     "media_urls": [
-      "https://patch-work-rho.vercel.app/uploads/1729115500-123456789.jpg"
+      "https://gagcunywlvizpurbcdmv.supabase.co/storage/v1/object/public/report-media/1729115500-123456789.jpg"
     ]
   }
   ```
+> **Frontend Tip:** Keep the returned `media_urls` array in state so you can pass it to the Chatbot.
 
-### B. Report Form Submission
-- **Endpoint:** `POST https://patch-work-rho.vercel.app/api/reports`
-- **Headers:** `Content-Type: application/json`
-- **Body:**
-  ```json
-  {
-    "reporter_name": "Fatima Zahra",
-    "contact": "+92 300 1234567",
-    "email": "fatima@example.com",
-    "location": "Street 5 near Community Park",
-    "category": "Broken Streetlight",
-    "description": "Streetlight pole #4 has an exposed sparking wire",
-    "severity": "high",
-    "media_urls": ["https://patch-work-rho.vercel.app/uploads/1729115500-123456789.jpg"]
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "success": true,
-    "message": "Report logged successfully and notification automations triggered.",
-    "report": {
-      "id": "PW-526666",
-      "reporter_name": "Fatima Zahra",
-      "category": "Broken Streetlight",
-      "location": "Street 5 near Community Park",
-      "status": "open",
-      "verification": {
-        "label": "verified",
-        "reason": "Image shows an exposed sparking streetlight pole."
-      },
-      "created_at": "...",
-      "expires_at": null
-    }
-  }
-  ```
+---
 
-### C. Conversational Chatbot (Text Reporting)
+### Step 2: Choose AI Intake (Chat OR Voice Call)
+
+The resident chooses how they want to report the issue:
+
+#### Mode A: Interactive AI Chatbot (Text Intake)
+The resident converses with the AI assistant. The AI asks what happened, exact location, resident's name, and phone/email, then automatically creates the ticket.
 - **Endpoint:** `POST https://patch-work-rho.vercel.app/api/chat`
 - **Headers:** `Content-Type: application/json`
-- **Body:**
+- **Request Body:**
   ```json
   {
-    "message": "A deep pothole on Main Street near the park entrance",
+    "message": "There is a broken streetlight with sparking wires on Street 4",
     "history": [
-      { "sender": "user", "text": "Hi" },
-      { "sender": "bot", "text": "Hello! What issue would you like to report?" }
+      { "sender": "bot", "text": "Hello! Welcome to PatchWork. What problem would you like to report today?" }
     ],
-    "media_urls": []
+    "media_urls": ["https://gagcunywlvizpurbcdmv.supabase.co/storage/v1/object/public/report-media/...jpg"]
   }
   ```
-- **Response:**
+- **Response (In-Progress):**
   ```json
   {
     "success": true,
-    "reply": "Thank you! Could you please share your name and contact number?",
+    "reply": "Thank you! Could you please share your full name and a phone number or email?",
     "is_complete": false,
     "report": null
   }
   ```
-  *(When `is_complete` becomes `true`, the ticket is automatically saved and returned in `report.id`).*
+- **Response (When Finished):**
+  ```json
+  {
+    "success": true,
+    "reply": "Thank you Fatima! I have officially logged your report for Broken Streetlight at Street 4. Your ticket ID is PW-526666.",
+    "is_complete": true,
+    "report": {
+      "id": "PW-526666",
+      "reporter_name": "Fatima Zahra",
+      "category": "Broken Streetlight",
+      "location": "Street 4",
+      "status": "open",
+      "created_at": "2026-10-18T01:40:00.000Z"
+    }
+  }
+  ```
+> **When `is_complete === true`:** Automatically redirect the resident to the status page: `/status/${data.report.id}`!
 
-### D. Voice Call (Vapi Web Integration)
-Kavya can install the official Vapi Web SDK in her frontend:
-```bash
-npm install @vapi-ai/web
-```
+---
 
-> **Security Note:** Never put the private `VAPI_API_KEY` in frontend code. For web calling, Vapi uses your **Public Key** (from Vapi Dashboard $\rightarrow$ Account $\rightarrow$ API Keys $\rightarrow$ Public Key) and the **Assistant ID**. These can be loaded via `NEXT_PUBLIC_*` environment variables or fetched dynamically from `GET /api/vapi/config`.
+#### Mode B: In-Browser AI Voice Call (Vapi Integration)
+The resident taps the microphone button to talk directly to the AI assistant.
 
-Example React button component:
+1. Install the official Vapi Web SDK in the frontend:
+   ```bash
+   npm install @vapi-ai/web
+   ```
+2. Fetch the public voice credentials dynamically from the backend:
+   - **Endpoint:** `GET https://patch-work-rho.vercel.app/api/vapi/config`
+   - **Response:**
+     ```json
+     {
+       "success": true,
+       "publicKey": "94c8a77f-cf15-4354-91a0-f45b6f42e6d1",
+       "assistantId": "f99f9a56-214a-47a1-9449-1de9f2d5dbbe",
+       "ready": true
+     }
+     ```
+
+Example React component for the Voice Button:
 ```jsx
 import React, { useState, useEffect } from 'react';
 import Vapi from '@vapi-ai/web';
 
-export function VoiceCallButton() {
+export function VoiceCallButton({ onTicketCreated }) {
   const [vapi, setVapi] = useState(null);
   const [isCalling, setIsCalling] = useState(false);
   const [assistantId, setAssistantId] = useState(null);
@@ -149,14 +158,15 @@ export function VoiceCallButton() {
       style={{
         backgroundColor: isCalling ? '#e53e3e' : '#3182ce',
         color: 'white',
-        padding: '12px 24px',
+        padding: '14px 28px',
         borderRadius: '8px',
         border: 'none',
         cursor: vapi ? 'pointer' : 'not-allowed',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        fontSize: '16px'
       }}
     >
-      {isCalling ? '🔴 End Voice Call' : '🎙️ Speak to AI Assistant'}
+      {isCalling ? '🔴 End Voice Call' : '🎙️ Talk to AI Assistant'}
     </button>
   );
 }
@@ -164,7 +174,8 @@ export function VoiceCallButton() {
 
 ---
 
-## 2. Page 2: Confirmation / Status Page
+## 📄 2. Page 2: Confirmation / Status Tracking Page (`/status/:id`)
+Shows the live status of the reported issue.
 - **Endpoint:** `GET https://patch-work-rho.vercel.app/api/reports/:id`
 - **Example:** `GET https://patch-work-rho.vercel.app/api/reports/PW-526666`
 - **Response:**
@@ -182,15 +193,62 @@ export function VoiceCallButton() {
         "label": "verified",
         "reason": "Image shows an exposed sparking streetlight pole."
       },
-      "created_at": "2026-10-18T01:40:00.000Z"
+      "media_urls": ["https://gagcunywlvizpurbcdmv.supabase.co/..."],
+      "created_at": "2026-10-18T01:40:00.000Z",
+      "solved_at": null,
+      "expires_at": null
     }
   }
   ```
+> **Display:** Show the AI verification badge (`verified` in green, `unclear` in yellow, `does not match` in red, or `skipped` in gray) and the explanation `reason`.
 
 ---
 
-## 3. Page 3: Live Community Dashboard
+## 📄 3. Page 3: Live Community Dashboard (`/dashboard`)
+There is **NO separate manager dashboard and NO manager login**. Any community resident can open this page to view active issues and mark them fixed!
+
 - **Fetch Active Reports:** `GET https://patch-work-rho.vercel.app/api/reports/dashboard`
-  - *Lifecycle Rule:* Open reports remain on the dashboard **indefinitely** until marked solved. Solved reports remain visible for **12 hours** with a countdown, then disappear.
-- **One-Click "Mark Solved":** `PATCH https://patch-work-rho.vercel.app/api/reports/:id/solve`
-  - Marks report status as `solved` and sets `expires_at` to 12 hours from now.
+  - *Retention Rule:* Open reports remain visible indefinitely. Solved reports remain visible for **12 hours** with a countdown timer, then automatically disappear.
+  - **Response:**
+    ```json
+    {
+      "success": true,
+      "count": 3,
+      "reports": [
+        {
+          "id": "PW-526666",
+          "reporter_name": "Fatima Zahra",
+          "category": "Broken Streetlight",
+          "location": "Street 5 near Community Park",
+          "description": "Streetlight pole #4 has an exposed sparking wire",
+          "status": "open",
+          "verification": {
+            "label": "verified",
+            "reason": "Image shows an exposed sparking streetlight pole."
+          },
+          "media_urls": ["..."],
+          "created_at": "2026-10-18T01:40:00.000Z",
+          "solved_at": null,
+          "expires_at": null
+        }
+      ]
+    }
+    ```
+
+- **One-Click "Mark Solved" Button:**
+  - When any user clicks "Mark Solved" on a card:
+  - **Endpoint:** `PATCH https://patch-work-rho.vercel.app/api/reports/:id/solve`
+  - **Response:**
+    ```json
+    {
+      "success": true,
+      "message": "Report marked as solved. It will disappear from the dashboard in 12 hours.",
+      "report": {
+        "id": "PW-526666",
+        "status": "solved",
+        "solved_at": "2026-10-18T05:00:00.000Z",
+        "expires_at": "2026-10-18T17:00:00.000Z"
+      }
+    }
+    ```
+  - **UI Behavior:** Switch status badge to `Solved` and display a 12-hour countdown until removal (based on `expires_at`).
