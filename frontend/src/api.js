@@ -1,6 +1,8 @@
 // All backend calls for the report page (see frontend/API_SPEC_FOR_KAVYA.md in the repo).
-const BASE = (import.meta.env.VITE_API_URL || 'https://patch-work-rho.vercel.app').replace(/\/$/, '');
-export const MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+const BASE = (
+  import.meta.env.VITE_API_URL || "https://patch-work-rho.vercel.app"
+).replace(/\/$/, "");
+export const MOCK = import.meta.env.VITE_USE_MOCK === "true";
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function request(path, options) {
@@ -8,8 +10,14 @@ async function request(path, options) {
   try {
     res = await fetch(BASE + path, options);
   } catch {
-    throw new Error("Can't reach the server. Check your connection and try again.");
+    throw new Error(
+      "Can't reach the server. Check your connection and try again.",
+    );
   }
+  if (res.status === 429)
+    throw new Error(
+      "Too many requests right now. Please wait a minute and try again.",
+    );
   let data = null;
   try {
     data = await res.json();
@@ -17,7 +25,10 @@ async function request(path, options) {
     /* no json body */
   }
   if (!res.ok || (data && data.success === false)) {
-    throw new Error((data && (data.message || data.error)) || 'Something went wrong. Please try again.');
+    throw new Error(
+      (data && (data.message || data.error)) ||
+        "Something went wrong. Please try again.",
+    );
   }
   return data;
 }
@@ -35,35 +46,42 @@ export function uploadFile(file, onProgress) {
   }
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', BASE + '/api/upload');
+    xhr.open("POST", BASE + "/api/upload");
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      if (e.lengthComputable)
+        onProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
       try {
         const d = JSON.parse(xhr.responseText);
-        if (xhr.status < 300 && d.success && d.media_urls && d.media_urls.length) resolve(d.media_urls[0]);
-        else reject(new Error(d.message || 'Upload failed'));
+        if (
+          xhr.status < 300 &&
+          d.success &&
+          d.media_urls &&
+          d.media_urls.length
+        )
+          resolve(d.media_urls[0]);
+        else reject(new Error(d.message || "Upload failed"));
       } catch {
-        reject(new Error('Upload failed'));
+        reject(new Error("Upload failed"));
       }
     };
-    xhr.onerror = () => reject(new Error('Upload failed'));
+    xhr.onerror = () => reject(new Error("Upload failed"));
     const form = new FormData();
-    form.append('media', file);
+    form.append("media", file);
     xhr.send(form);
   });
 }
 
 // GET /api/vapi/config -> { publicKey, assistantId, ready }
 export async function getVapiConfig() {
-  if (MOCK) return { publicKey: 'mock', assistantId: 'mock', ready: true };
-  return request('/api/vapi/config');
+  if (MOCK) return { publicKey: "mock", assistantId: "mock", ready: true };
+  return request("/api/vapi/config");
 }
 
 // GET /api/vapi/latest-ticket -> { success, ticket_id }
 export async function getLatestVoiceTicket(callId) {
-  const query = callId ? `?call_id=${encodeURIComponent(callId)}` : '';
+  const query = callId ? `?call_id=${encodeURIComponent(callId)}` : "";
   return request(`/api/vapi/latest-ticket${query}`);
 }
 
@@ -72,18 +90,29 @@ export async function getLatestVoiceTicket(callId) {
 export async function sendChat({ message, history, media_urls }) {
   if (MOCK) {
     await wait(900);
-    const n = history.filter((h) => h.sender === 'user').length + 1;
-    if (n === 1) return { reply: 'Thanks. Where exactly is this? A nearby landmark is helpful.', is_complete: false, report: null };
-    if (n === 2) return { reply: 'Thank you! Could you share your full name and a phone number or email?', is_complete: false, report: null };
+    const n = history.filter((h) => h.sender === "user").length + 1;
+    if (n === 1)
+      return {
+        reply: "Thanks. Where exactly is this? A nearby landmark is helpful.",
+        is_complete: false,
+        report: null,
+      };
+    if (n === 2)
+      return {
+        reply:
+          "Thank you! Could you share your full name and a phone number or email?",
+        is_complete: false,
+        report: null,
+      };
     return {
-      reply: 'Thank you! I have logged your report. Your ticket ID is PW-1048.',
+      reply: "Thank you! I have logged your report. Your ticket ID is PW-1048.",
       is_complete: true,
-      report: { id: 'PW-1048' },
+      report: { id: "PW-1048" },
     };
   }
-  return request('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  return request("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, history, media_urls }),
   });
 }

@@ -12,6 +12,7 @@ async function request(path, options) {
   } catch {
     throw new Error("Can't reach the server. Check your connection and try again.");
   }
+  if (res.status === 429) throw new Error('Too many requests right now. Please wait a minute and try again.');
   let data = null;
   try {
     data = await res.json();
@@ -43,7 +44,7 @@ function seed() {
   ];
 }
 
-export async function fetchReports() {
+async function loadReports() {
   if (MOCK) {
     await wait(800);
     if (!mockReports) mockReports = seed();
@@ -66,4 +67,10 @@ export async function markSolved(id) {
   }
   const data = await request(`/api/reports/${encodeURIComponent(id)}/solve`, { method: 'PATCH' });
   return data.report || {};
+}
+
+let pending = null;
+export function fetchReports() {
+  if (!pending) pending = loadReports().finally(() => { pending = null; });
+  return pending;
 }

@@ -11,7 +11,7 @@ const art = (a, b) =>
     `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${a}'/><stop offset='1' stop-color='${b}'/></linearGradient></defs><rect width='400' height='300' fill='url(#g)'/></svg>`
   );
 
-export async function getReport(id) {
+async function fetchReport(id) {
   if (MOCK) {
     // Try /status/PW-1048, /status/solved, /status/notfound, /status/error
     await wait(900);
@@ -40,6 +40,9 @@ export async function getReport(id) {
   } catch {
     throw fail('error');
   }
+  if (res.status === 429) {
+    throw Object.assign(new Error('ratelimit'), { kind: 'ratelimit', retryAfter: Number(res.headers.get('Retry-After')) || 0 });
+  }
   if (res.status === 404 || res.status === 400) throw fail('notfound');
   let data = null;
   try {
@@ -52,4 +55,14 @@ export async function getReport(id) {
     throw fail('error');
   }
   return data.report;
+}
+
+// React in dev mode runs effects twice, which sends two identical requests and can trip the
+// backend rate limit. Share one in-flight request per id.
+const inflight = new Map();
+export function getReport(id) {
+  if (inflight.has(id)) return inflight.get(id);
+  const p = fetchReport(id).finally(() => inflight.delete(id));
+  inflight.set(id, p);
+  return p;
 }

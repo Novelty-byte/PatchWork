@@ -242,11 +242,20 @@ export default function StatusPage() {
   const load = useCallback(
     async (quiet = false) => {
       if (!quiet) setState({ kind: 'loading' });
-      try {
-        const report = await getReport(id);
-        setState({ kind: 'ok', report });
-      } catch (e) {
-        if (!quiet) setState({ kind: e.kind === 'notfound' ? 'notfound' : 'error' });
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const report = await getReport(id);
+          setState({ kind: 'ok', report });
+          return;
+        } catch (e) {
+          if (e.kind === 'ratelimit' && attempt < 3) {
+            if (!quiet) setState({ kind: 'loading', waiting: true });
+            await new Promise((r) => setTimeout(r, Math.min(e.retryAfter || 6, 15) * 1000));
+            continue;
+          }
+          if (!quiet) setState({ kind: e.kind === 'notfound' ? 'notfound' : 'error' });
+          return;
+        }
       }
     },
     [id]
@@ -267,7 +276,12 @@ export default function StatusPage() {
 
   return (
     <Layout>
-      {state.kind === 'loading' && <Skeleton />}
+      {state.kind === 'loading' && (
+        <>
+          {state.waiting && <p className="st-sub" style={{ margin: '0 auto 16px', textAlign: 'center' }}>Lots of people are using PatchWork right now. Trying again...</p>}
+          <Skeleton />
+        </>
+      )}
       {state.kind === 'notfound' && <NotFoundView />}
       {state.kind === 'error' && <ErrorView onRetry={() => load()} />}
       {state.kind === 'ok' && <ReportView report={state.report} />}
