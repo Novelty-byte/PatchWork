@@ -1,19 +1,28 @@
 # PatchWork frontend
 
-Report page (Page 1). Vite + React.
+Vite + React. Pages:
+
+- `/` report page: photo/video upload, then chat or voice call with the AI assistant
+- `/status/:id` report status page (also reachable at `/report/:id`)
+- `/dashboard` live community dashboard (public, no login)
 
 ## Run it
-```bash
-npm install
-cp .env.example .env     # then edit .env
-npm run dev              # http://localhost:5173
-```
-Set `VITE_USE_MOCK=true` in `.env` to try the whole flow without the backend.
+
+    npm install
+    cp .env.example .env     # on Windows: copy .env.example .env
+    npm run dev              # http://localhost:5173
 
 ## Env vars
-- `VITE_API_URL`: backend URL (default http://localhost:5000)
-- `VITE_VAPI_PUBLIC_KEY`: Vapi public key for the voice call
-- `VITE_USE_MOCK`: fake upload/chat/voice/submit for UI testing
 
-## Still needed from the backend
-`POST /api/chat` is not in API_SPEC_FOR_KAVYA.md. See `src/api.js` for the shape the UI expects.
+- `VITE_API_URL`: backend URL (default https://patch-work-rho.vercel.app)
+- `VITE_USE_MOCK`: set to `true` to try the whole flow with fake data, without the backend
+
+The Vapi public key for voice calls comes from the backend (`/api/vapi/config`), so it is not needed in `.env`.
+
+## Backend
+
+API details are in `API_SPEC_FOR_KAVYA.md`. All calls are in `src/api.js` (report page), `src/statusApi.js` and `src/managerApi.js` (dashboard).
+
+## Deploy
+
+Vercel: set the Root Directory to `frontend` and add `VITE_API_URL`. `vercel.json` makes direct links like `/dashboard` work.
