@@ -22,6 +22,7 @@ import { CATEGORIES } from "../components/UploadCard.jsx";
 import { fetchReports, markSolved } from "../managerApi";
 import "../status.css";
 import "../manager.css";
+import ThemeToggle from "../components/ThemeToggle.jsx";
 
 const HOUR = 3600e3;
 
@@ -379,6 +380,7 @@ export default function ManagerPage() {
               <Plus size={16} />{" "}
               <span className="desk-only">Report a problem</span>
             </Link>
+            <ThemeToggle />
           </div>
         </div>
       </header>
