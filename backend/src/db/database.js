@@ -45,6 +45,22 @@ function saveDatabase() {
 loadDatabase();
 
 /**
+ * Helper to dynamically extract latitude and longitude from location string if not present
+ */
+function attachGpsCoordinates(report) {
+  if (!report) return report;
+  if ((report.latitude === undefined || report.latitude === null) ||
+      (report.longitude === undefined || report.longitude === null)) {
+    const match = (report.location || '').match(/📍\s*GPS:\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+    if (match) {
+      report.latitude = parseFloat(match[1]);
+      report.longitude = parseFloat(match[2]);
+    }
+  }
+  return report;
+}
+
+/**
  * Creates a new report and persists to Supabase (with fallback)
  */
 async function createReport({
@@ -89,16 +105,24 @@ async function createReport({
   // Persist to Supabase if available
   if (isConfigured && supabase) {
     try {
+      // Exclude latitude and longitude from Supabase payload since the Supabase table schema
+      // does not have these columns (coordinates are already cleanly embedded inside the location string)
+      const { latitude: _lat, longitude: _lng, ...supabasePayload } = newReport;
+
       const { data, error } = await supabase
         .from('reports')
-        .insert([newReport])
+        .insert([supabasePayload])
         .select()
         .single();
 
       if (error) {
         console.warn('⚠️ Supabase insert warning (using local store):', error.message);
       } else if (data) {
-        return data;
+        return {
+          ...data,
+          latitude: newReport.latitude,
+          longitude: newReport.longitude
+        };
       }
     } catch (err) {
       console.warn('⚠️ Supabase network error on insert (using local store):', err.message);
@@ -121,14 +145,15 @@ async function getReportById(id) {
         .maybeSingle();
 
       if (!error && data) {
-        return data;
+        return attachGpsCoordinates(data);
       }
     } catch (err) {
       console.warn('⚠️ Supabase getReportById error, falling back to local store:', err.message);
     }
   }
 
-  return reports.find(r => r.id === id) || null;
+  const localReport = reports.find(r => r.id === id);
+  return localReport ? attachGpsCoordinates(localReport) : null;
 }
 
 /**
@@ -151,7 +176,7 @@ async function getDashboardReports() {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        return data;
+        return data.map(attachGpsCoordinates);
       } else if (error) {
         console.warn('⚠️ Supabase getDashboardReports error, falling back to local store:', error.message);
       }
@@ -167,7 +192,7 @@ async function getDashboardReports() {
       return (now - solvedTime) < twelveHoursMs;
     }
     return true;
-  });
+  }).map(attachGpsCoordinates);
 }
 
 /**
@@ -202,14 +227,14 @@ async function markReportSolved(id) {
         .single();
 
       if (!error && data) {
-        return data;
+        return attachGpsCoordinates(data);
       }
     } catch (err) {
       console.warn('⚠️ Supabase markReportSolved error:', err.message);
     }
   }
 
-  return report || null;
+  return report ? attachGpsCoordinates(report) : null;
 }
 
 /**
@@ -243,14 +268,14 @@ async function updateVerification(id, verificationResult) {
         .single();
 
       if (!error && data) {
-        return data;
+        return attachGpsCoordinates(data);
       }
     } catch (err) {
       console.warn('⚠️ Supabase updateVerification error:', err.message);
     }
   }
 
-  return report || null;
+  return report ? attachGpsCoordinates(report) : null;
 }
 
 module.exports = {
