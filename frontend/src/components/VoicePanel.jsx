@@ -25,7 +25,7 @@ function Transcript({ lines, label, status }) {
   );
 }
 
-export default function VoicePanel({ notify, mediaUrls = [] }) {
+export default function VoicePanel({ notify, mediaUrls = [], gpsLocation = null }) {
   const navigate = useNavigate();
   const [state, setState] = useState('idle'); // idle | permission | connecting | active | ended
   const [seconds, setSeconds] = useState(0);
@@ -118,11 +118,17 @@ export default function VoicePanel({ notify, mediaUrls = [] }) {
         setState('idle');
       });
 
-      const startOverrides = {};
+      const startOverrides = { variableValues: {} };
       if (mediaUrls && mediaUrls.length > 0) {
-        startOverrides.variableValues = {
-          media_urls: mediaUrls.join(',')
-        };
+        startOverrides.variableValues.media_urls = mediaUrls.join(',');
+      }
+      if (gpsLocation) {
+        startOverrides.variableValues.gps_lat = String(gpsLocation.lat);
+        startOverrides.variableValues.gps_lng = String(gpsLocation.lng);
+        startOverrides.variableValues.gps_address = gpsLocation.address || '';
+        startOverrides.variableValues.gps_text = gpsLocation.address
+          ? `📍 GPS: ${gpsLocation.lat.toFixed(5)}, ${gpsLocation.lng.toFixed(5)} (${gpsLocation.address})`
+          : `📍 GPS: ${gpsLocation.lat.toFixed(5)}, ${gpsLocation.lng.toFixed(5)}`;
       }
       await vapi.start(cfg.assistantId, startOverrides);
     } catch (err) {

@@ -17,6 +17,7 @@ import {
 import { getReport } from "../statusApi";
 import "../status.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
+import { formatLocationWithGps } from "./ManagerPage.jsx";
 
 /* ---------- helpers ---------- */
 const time12 = (d) =>
@@ -281,7 +282,17 @@ function ReportView({ report }) {
         </div>
         <h2 className="st-title">{report.category}</h2>
         <p className="st-loc">
-          <MapPin size={16} /> {report.location}
+          <MapPin size={16} /> {formatLocationWithGps(report)}
+          {report.latitude && report.longitude && (
+            <a
+              href={`https://www.google.com/maps?q=${report.latitude},${report.longitude}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ marginLeft: 8, fontSize: "12px", color: "var(--teal)", textDecoration: "underline" }}
+            >
+              Open map ↗
+            </a>
+          )}
         </p>
         <p className="st-created">Created {fmtLong(report.created_at)}</p>
 

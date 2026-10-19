@@ -32,6 +32,15 @@ const isVideo = (u) =>
   /\.(mp4|mov|webm)(\?|$)/i.test(u) || u.startsWith("data:video");
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
+export function formatLocationWithGps(r) {
+  if (!r) return "Location not specified";
+  let loc = r.location || "Location not specified";
+  if (r.latitude && r.longitude && !loc.includes("📍 GPS:")) {
+    loc = `${loc} · 📍 GPS: ${Number(r.latitude).toFixed(5)}, ${Number(r.longitude).toFixed(5)}`;
+  }
+  return loc;
+}
+
 function ago(iso) {
   const m = Math.max(
     1,
@@ -125,7 +134,7 @@ function ReportCard({ r, onOpen }) {
         </div>
         <h3>{r.category}</h3>
         <p className="mg-meta">
-          <MapPin size={15} /> {r.location}
+          <MapPin size={15} /> {formatLocationWithGps(r)}
         </p>
         <p className="mg-meta">
           <User size={15} /> {r.reporter_name || "Anonymous resident"} ·{" "}
@@ -227,7 +236,18 @@ function DetailPanel({ r, onClose, onAskSolve }) {
             </div>
             <div>
               <span className="eyebrow">LOCATION</span>
-              <p>{r.location}</p>
+              <p>{formatLocationWithGps(r)}</p>
+              {r.latitude && r.longitude && (
+                <a
+                  href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="tiny"
+                  style={{ display: "inline-block", marginTop: "4px", color: "var(--teal)", textDecoration: "underline" }}
+                >
+                  View on map ↗
+                </a>
+              )}
             </div>
             <div>
               <span className="eyebrow">REPORTED</span>

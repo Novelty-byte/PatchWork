@@ -33,6 +33,9 @@ router.post('/', applySubmissionLimiter, async (req, res) => {
       contact,
       email,
       location,
+      latitude = null,
+      longitude = null,
+      gps = null,
       category,
       description,
       severity = 'medium',
@@ -46,6 +49,26 @@ router.post('/', applySubmissionLimiter, async (req, res) => {
       });
     }
 
+    // Combine user specified location and GPS side by side if GPS was provided
+    let finalLocation = location || 'Location not specified';
+    let lat = latitude;
+    let lng = longitude;
+
+    if (gps && (gps.lat !== undefined && gps.lat !== null) && (gps.lng !== undefined && gps.lng !== null)) {
+      lat = Number(gps.lat);
+      lng = Number(gps.lng);
+      if (!finalLocation.includes('📍 GPS:')) {
+        const latStr = lat.toFixed(5);
+        const lngStr = lng.toFixed(5);
+        const gpsLabel = gps.address
+          ? `📍 GPS: ${latStr}, ${lngStr} (${gps.address})`
+          : `📍 GPS: ${latStr}, ${lngStr}`;
+        finalLocation = `${finalLocation} · ${gpsLabel}`;
+      }
+    } else if (lat !== null && lng !== null && !finalLocation.includes('📍 GPS:')) {
+      finalLocation = `${finalLocation} · 📍 GPS: ${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
+    }
+
     // 1. Reports are saved first: A report is stored before any AI or email step runs
     const initialVerification = (media_urls && media_urls.length > 0)
       ? { label: 'unclear', reason: 'Analyzing visual evidence...' }
@@ -55,7 +78,9 @@ router.post('/', applySubmissionLimiter, async (req, res) => {
       reporter_name,
       contact,
       email,
-      location,
+      location: finalLocation,
+      latitude: lat ? Number(lat) : null,
+      longitude: lng ? Number(lng) : null,
       category,
       description,
       severity,

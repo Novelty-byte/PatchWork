@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { ImagePlus, Camera, X, Play, CircleAlert, Info } from "lucide-react";
+import GpsLocationPicker from "./GpsLocationPicker.jsx";
 
 export const CATEGORIES = [
   "Broken Streetlight",
@@ -19,6 +20,9 @@ export default function UploadCard({
   onAdd,
   onRemove,
   onDismissError,
+  gpsLocation,
+  onGpsChange,
+  notify,
 }) {
   const [drag, setDrag] = useState(false);
   const browseRef = useRef(null);
@@ -34,7 +38,7 @@ export default function UploadCard({
       <div className="card-head">
         <span className="step-badge">1</span>
         <div>
-          <h2 id="upload-title">Add Photo / Video</h2>
+          <h2 id="upload-title">Add Photo / Video & GPS</h2>
           <p className="muted">Optional · A little context helps.</p>
         </div>
       </div>
@@ -101,6 +105,12 @@ export default function UploadCard({
           onChange={pick}
         />
       </div>
+
+      <GpsLocationPicker
+        location={gpsLocation}
+        onChange={onGpsChange}
+        notify={notify}
+      />
 
       {files.length > 0 && (
         <div className="files">

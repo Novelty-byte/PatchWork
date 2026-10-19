@@ -1208,3 +1208,341 @@ h1 {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* ---------- GPS Location Feature & Map Modal ---------- */
+.gps-box {
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.gps-box-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gps-box-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gps-box-title strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.gps-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gps-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+.gps-pinned-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--mint);
+  border: 1px solid var(--mint-line);
+  border-radius: var(--r-sm);
+  gap: 12px;
+}
+
+.gps-pinned-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.gps-coords-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--teal);
+}
+
+.loc-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+.gps-address-text {
+  font-size: 12px;
+  color: var(--ink);
+  font-weight: 500;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gps-attached-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.gps-pinned-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-xs {
+  font-size: 11px;
+  padding: 4px 10px;
+  height: 28px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.icon-btn-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.icon-btn-sm:hover {
+  color: var(--clay);
+  border-color: var(--clay);
+}
+
+/* Map Modal */
+.map-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.map-modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalPop 0.2s ease-out;
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.map-modal-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.map-modal-title h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.map-modal-toolbar {
+  padding: 10px 16px;
+  display: flex;
+  gap: 10px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.map-search-form {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 4px 6px 4px 10px;
+}
+
+.map-search-form input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+}
+
+.map-search-icon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.map-locate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.map-search-error {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--clay);
+  background: var(--clay-bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.map-wrapper {
+  position: relative;
+  height: 360px;
+  width: 100%;
+  background: #e5e3df;
+}
+
+.map-container {
+  height: 100%;
+  width: 100%;
+}
+
+.map-helper-tip {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  z-index: 500;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-modal-foot {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  gap: 14px;
+}
+
+.map-pin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  max-width: 60%;
+}
+
+.map-pin-coords {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--teal);
+}
+
+.map-pin-address {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.map-modal-btns {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 639px) {
+  .gps-actions-grid {
+    grid-template-columns: 1fr;
+  }
+  .map-modal-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .map-pin-info {
+    max-width: 100%;
+    margin-bottom: 8px;
+  }
+  .map-modal-btns {
+    width: 100%;
+  }
+  .map-modal-btns button {
+    flex: 1;
+  }
+}

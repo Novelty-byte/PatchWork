@@ -31,7 +31,7 @@ Follow this conversational flow:
 1. Ask for or listen to the problem description and classify the category (e.g., Broken Streetlight, Pothole, Sewage / Flooding, Park / Building Infrastructure, or Other Community Issue).
 2. Ask for the specific location (street name, house or block number, nearby landmark).
 3. Ask for the resident's full name.
-4. Ask for their EMAIL ADDRESS. This is MANDATORY - you cannot submit the report without it. Explain that their ticket confirmation and status updates will be sent to this email. When the resident provides their email, ask them to spell it out letter by letter (e.g., "A - B  - C") to ensure accuracy. Do not misinterpret the letters and sound. Phone number is optional and secondary.
+4. Ask for their EMAIL ADDRESS. This is MANDATORY - you cannot submit the report without it. Explain that their ticket confirmation and status updates will be sent to this email. When the resident provides their email, read it back to them ONCE to confirm (e.g., "I have your email as abc@example.com — is that correct?"). Once they say yes or confirm, accept it immediately and move on. Do NOT ask for email again after confirmation. Phone number is optional and secondary.
 5. Once you have all 4 pieces of information (category/description, location, name, and valid email address):
    - Briefly summarize what you recorded to the caller to confirm.
    - Call the 'submit_community_report' tool with the extracted details.
@@ -40,6 +40,7 @@ Follow this conversational flow:
 Rules:
 - Keep your verbal responses concise and conversational (1-3 sentences max).
 - Speak naturally and reassuringly.
+- CRITICAL: The 'description' parameter in submit_community_report must ONLY describe the physical infrastructure problem (e.g., "Deep pothole in the asphalt near the road junction posing a risk to motorbikes"). NEVER put the resident's name, phone number, or email in the description.
 - EMAIL is mandatory. Do NOT submit the report if email is not provided. If the resident refuses or cannot provide email, politely insist that it is required for ticket confirmation and ask again.
 - Phone number is optional. If not provided, set contact to "Not provided".
 - NEVER accept a phone number as a substitute for an email.`
@@ -75,15 +76,17 @@ Rules:
                   enum: [
                     "Broken Streetlight",
                     "Pothole",
-                    "Sewage / Flooding",
-                    "Park / Building Infrastructure",
-                    "Other Community Issue"
+                    "Sewage",
+                    "Flooding",
+                    "Damaged Park",
+                    "Damaged Building",
+                    "Other"
                   ],
                   description: "Category of the problem"
                 },
                 description: {
                   type: "string",
-                  description: "Detailed description of the issue"
+                  description: "Detailed description of the physical infrastructure fault only (no personal info)"
                 },
                 severity: {
                   type: "string",
@@ -96,7 +99,7 @@ Rules:
                   description: "List of photo or video URLs attached by the resident"
                 }
               },
-              required: ["reporter_name", "contact", "location", "category", "description"]
+              required: ["reporter_name", "location", "category", "description"]
             }
           },
           server: {
@@ -110,7 +113,41 @@ Rules:
         enabled: true
       },
       structuredDataPlan: {
-        enabled: true
+        enabled: true,
+        schema: {
+          type: "object",
+          properties: {
+            category: {
+              type: "string",
+              enum: [
+                "Broken Streetlight",
+                "Pothole",
+                "Sewage",
+                "Flooding",
+                "Damaged Park",
+                "Damaged Building",
+                "Other"
+              ],
+              description: "The specific category of the problem reported"
+            },
+            description: {
+              type: "string",
+              description: "Clear and concise description of the physical defect or infrastructure issue only, excluding personal names and emails"
+            },
+            location: {
+              type: "string",
+              description: "Specific location of the issue"
+            },
+            reporter_name: {
+              type: "string",
+              description: "Full name of the caller"
+            },
+            email: {
+              type: "string",
+              description: "Email address of the caller"
+            }
+          }
+        }
       }
     }
   };

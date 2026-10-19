@@ -1,3 +1,8 @@
+const dns = require('dns');
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (e) {}
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
@@ -17,40 +22,59 @@ const PHONE_REGEX = /(\+?\d[\d\s-]{7,15}\d)/;
  * System prompt to conduct intake and extract structured issue reports
  */
 const SYSTEM_PROMPT = `
-You are the intelligent community reporting assistant for PatchWork.
-Your objective is to help residents report infrastructure issues (broken streetlights, potholes, sewage, flooding, damaged infrastructure).
+You are Patch, the intelligent AI community reporting assistant for PatchWork, a neighborhood civic infrastructure reporting platform.
 
-You must politely collect the following 4 details through natural conversation:
-1. Category & problem description (classify as: Broken Streetlight, Pothole, Sewage / Flooding, Park / Building Infrastructure, or Other Community Issue).
-2. Exact Location (street name, house/block number, landmark).
-3. Reporter's Full Name.
-4. Reporter's Email Address (MANDATORY: explain that ticket verification and confirmation will be sent to this email) and optional contact phone number.
+YOUR PURPOSE:
+You help residents report physical infrastructure and civic issues in their community — such as broken streetlights, potholes, sewage overflows, flooding/standing water, damaged park equipment, hazardous building or wall damage, and other civic infrastructure problems.
 
-BEHAVIOR:
-- Ask follow-up questions one at a time so you don't overwhelm the resident.
-- Keep your conversational replies friendly, brief (1-2 sentences), and empathetic.
-- CRITICAL: You MUST explicitly collect a valid email address. If the resident only gives a phone number or name, politely ask for their email address specifically.
-- CRITICAL: The "description" in extracted_data must ONLY describe the physical problem (e.g., "Deep pothole on the main road causing a hazard for bikes"). NEVER put the resident's contact details, email, or name in the description.
-- When you have ALL details (category/description, location, name, and valid email), summarize them for the resident and declare the report complete.
+CONVERSATIONAL PERSONALITY & BEHAVIOR (ACT LIKE A TRUE AI):
+1. Warm, Natural & Flexible:
+   - Greet the resident warmly if they say hello or greet you.
+   - You are having a natural dialogue, NOT running through a robotic questionnaire.
+   - Listen carefully to what the resident actually says. Never rush or jump ahead if the user didn't answer your previous question.
+
+2. Corrections & Changing Minds:
+   - If the resident corrects themselves (e.g., "Uh, no sorry that was a mistake. There is a sewage leak" or "Actually, it's a pothole"), immediately acknowledge the correction, update the issue details/category to the new problem, and do NOT treat their correction as an answer to another question (like location or name).
+   - Confirm the new problem warmly and ask for the missing details naturally.
+
+3. Reject Off-Topic, Inappropriate & Explicit Requests:
+   - If the user asks general or off-topic questions (e.g., general trivia, homework, jokes), answer briefly and politely, and steer the conversation back to reporting their community issue.
+   - If the user asks for explicit, offensive, abusive, illegal, or completely unreasonable things, politely and firmly reject the request, state that you are Patch the community infrastructure assistant, and ask how you can help with their neighborhood issue.
+
+4. Handle Digressions & Interruptions:
+   - If the user gets sidetracked mid-conversation, remember all the details they already gave you (problem description, location, etc.).
+   - Acknowledge their message and guide them back to what is still needed to finish logging their report.
+
+5. Mandatory 4 Details to Complete a Report:
+   Before a report can be finalized, you need:
+   a. Physical problem description & category (Broken Streetlight, Pothole, Sewage, Flooding, Damaged Park, Damaged Building, or Other Community Issue).
+   b. Specific location (street name, house/block number, landmark).
+   c. Reporter's full name.
+   d. Reporter's valid email address (MANDATORY: explain that ticket confirmation and status updates will be sent to this email). Contact phone is optional.
+
+6. Critical Rules:
+   - Ask for missing details one at a time so you don't overwhelm the resident.
+   - The "description" field in extracted_data must ONLY describe the physical defect (e.g. "Sewage leaking across the road causing bad odor and hygiene hazard"). NEVER put the resident's personal name, phone number, or email in the description.
+   - Do NOT set "is_complete": true until ALL 4 details have been collected and confirmed.
 
 OUTPUT FORMAT:
 Always respond strictly with a valid JSON object matching this schema:
 {
-  "reply": "Your conversational message to the user here",
+  "reply": "Your friendly, conversational response to the user here",
   "is_complete": false,
   "extracted_data": null
 }
 
-When all details (problem description, location, full name, and email) have been provided, set:
+When and ONLY when all 4 details (problem description, location, full name, valid email) have been collected, set:
 {
   "reply": "Thank you [Name]! I have officially logged your report for [Category] at [Location]. A confirmation email has been dispatched to [Email] with your ticket details.",
   "is_complete": true,
   "extracted_data": {
     "reporter_name": "Full Name",
     "contact": "Phone Number (or 'Not provided')",
-    "email": "user@example.com (MUST be a clean email address only)",
+    "email": "user@example.com",
     "location": "Exact Location",
-    "category": "Broken Streetlight | Pothole | Sewage / Flooding | Park / Building Infrastructure | Other Community Issue",
+    "category": "Broken Streetlight | Pothole | Sewage | Flooding | Damaged Park | Damaged Building | Other Community Issue",
     "description": "Clear and detailed summary of the physical infrastructure fault only",
     "severity": "low | medium | high | critical"
   }
@@ -63,7 +87,7 @@ When all details (problem description, location, full name, and email) have been
  */
 router.post('/', async (req, res) => {
   try {
-    const { message, history = [], media_urls = [] } = req.body;
+    const { message, history = [], media_urls = [], gps = null } = req.body;
 
     if (!message) {
       return res.status(400).json({ success: false, error: 'Message content is required.' });
@@ -105,41 +129,66 @@ router.post('/', async (req, res) => {
         contents.push({ role: 'user', parts: [{ text: message }] });
       }
 
-      const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-      let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents,
-          generationConfig: {
-            responseMimeType: 'application/json'
-          }
-        })
-      });
+      // Candidate models list in priority order to guarantee uptime & quota resilience
+      const candidateModels = [
+        process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+        'gemini-3-flash-preview',
+        'gemini-3.5-flash-lite',
+        'gemini-flash-lite-latest',
+        'gemini-3.1-flash-lite-preview'
+      ];
 
-      if (response.ok) {
-        const data = await response.json();
-        let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          try {
-            rawText = rawText.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-            aiResponseJson = JSON.parse(rawText);
-            // Sanitize extracted email
-            if (aiResponseJson.extracted_data && aiResponseJson.extracted_data.email) {
-              const emailMatch = aiResponseJson.extracted_data.email.match(EMAIL_REGEX);
-              aiResponseJson.extracted_data.email = emailMatch ? emailMatch[0].toLowerCase() : '';
+      for (const model of candidateModels) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              contents,
+              generationConfig: {
+                responseMimeType: 'application/json'
+              }
+            })
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              try {
+                rawText = rawText.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+                const parsed = JSON.parse(rawText);
+                if (parsed && typeof parsed.reply === 'string') {
+                  aiResponseJson = parsed;
+                  // Sanitize extracted email
+                  if (aiResponseJson.extracted_data && aiResponseJson.extracted_data.email) {
+                    const emailMatch = aiResponseJson.extracted_data.email.match(EMAIL_REGEX);
+                    aiResponseJson.extracted_data.email = emailMatch ? emailMatch[0].toLowerCase() : '';
+                  }
+                  break; // Succeeded!
+                }
+              } catch (pe) {
+                console.warn(`JSON parse error for model ${model}:`, pe.message);
+              }
             }
-          } catch (pe) {
-            console.warn('Failed to parse Gemini JSON output:', pe.message);
+          } else {
+            console.warn(`Gemini model ${model} returned status ${response.status}. Trying next candidate.`);
           }
+        } catch (fe) {
+          clearTimeout(timeoutId);
+          console.warn(`Gemini model ${model} request error (${fe.message}). Trying next candidate.`);
         }
-      } else {
-        console.warn(`Gemini API call returned status ${response.status}, using conversational engine fallback.`);
       }
     }
 
-    // Smart conversational fallback engine if Gemini unavailable or not finished
+    // Smart conversational engine if Gemini unavailable
     if (!aiResponseJson) {
       aiResponseJson = processFallbackConversation(message, history);
     }
@@ -156,12 +205,34 @@ router.post('/', async (req, res) => {
         cleanEmail = match ? match[0].toLowerCase() : '';
       }
 
+      // Combine user specified location and GPS side by side if GPS was selected
+      const userLocation = data.location || 'Community Area';
+      let finalLocation = userLocation;
+      let latitude = null;
+      let longitude = null;
+
+      const hasGps = gps && (gps.lat !== undefined && gps.lat !== null) && (gps.lng !== undefined && gps.lng !== null);
+      if (hasGps) {
+        latitude = Number(gps.lat);
+        longitude = Number(gps.lng);
+        const latStr = latitude.toFixed(5);
+        const lngStr = longitude.toFixed(5);
+        const gpsLabel = gps.address
+          ? `📍 GPS: ${latStr}, ${lngStr} (${gps.address})`
+          : `📍 GPS: ${latStr}, ${lngStr}`;
+        if (!finalLocation.includes('📍 GPS:')) {
+          finalLocation = `${userLocation} · ${gpsLabel}`;
+        }
+      }
+
       createdReport = await db.createReport({
         reporter_name: data.reporter_name || 'Resident',
         contact: data.contact || 'Not provided',
         email: cleanEmail,
-        location: data.location || 'Community Area',
-        category: data.category || 'General Community Issue',
+        location: finalLocation,
+        latitude,
+        longitude,
+        category: data.category || 'Other Community Issue',
         description: data.description || 'Civic infrastructure fault reported via chat.',
         severity: data.severity || 'medium',
         media_urls: media_urls
@@ -190,14 +261,14 @@ router.post('/', async (req, res) => {
     console.error('Error in /api/chat endpoint:', err);
     return res.status(500).json({
       success: false,
-      reply: 'I experienced an issue processing that. Could you please rephrase or mention the issue location?',
+      reply: 'I experienced an issue processing that. Could you please rephrase or describe what issue you are seeing?',
       is_complete: false
     });
   }
 });
 
 /**
- * Robust fallback assistant for development/offline testing
+ * Intelligent fallback engine with multi-turn intent tracking, correction detection, and active listening
  */
 function processFallbackConversation(message, history) {
   // Normalize history into alternating turns
@@ -205,37 +276,92 @@ function processFallbackConversation(message, history) {
   (history || []).forEach(h => {
     turns.push({
       role: (h.sender === 'user' || h.role === 'user') ? 'user' : 'bot',
-      text: h.text || ''
+      text: (h.text || '').trim()
     });
   });
-  turns.push({ role: 'user', text: message });
+  turns.push({ role: 'user', text: message.trim() });
 
-  const userMessages = turns.filter(t => t.role === 'user').map(t => t.text.trim());
-  const allText = userMessages.join(' ');
+  const userMessages = turns.filter(t => t.role === 'user').map(t => t.text);
+  const currentMsg = message.trim();
+  const allUserText = userMessages.join(' ');
 
-  // 1. Extract clean email
-  const emailMatch = allText.match(EMAIL_REGEX);
+  // 1. Check if the user is merely greeting or saying hello without any issue details
+  const isGreeting = (str) => {
+    const s = str.toLowerCase().replace(/[^a-z\s]/g, '').trim();
+    const commonGreetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'salam', 'assalam o alaikum', 'assalam', 'greetings', 'help', 'yo', 'hi there', 'hello there'];
+    return commonGreetings.includes(s) || (s.length < 15 && /^(hi|hello|hey|help|can you help|i want to report|i have an issue|reporting)/i.test(s) && !/(pothole|light|lamp|road|sewage|drain|water|flood|park|bench|wall|leak|wire|spark)/i.test(s));
+  };
+
+  // 2. Reject explicit / abusive requests
+  if (/(\bporn\b|\bsex\b|romance story|hack a bank|explicit|violent|weapon|kill)/i.test(currentMsg)) {
+    return {
+      reply: "I cannot assist with that request. I am Patch, an AI assistant here specifically to help residents report community and infrastructure problems (such as potholes, broken streetlights, or sewage leaks). How can I help you with a neighborhood issue?",
+      is_complete: false,
+      extracted_data: null
+    };
+  }
+
+  // 3. Extract clean email
+  const emailMatch = allUserText.match(EMAIL_REGEX);
   const cleanEmail = emailMatch ? emailMatch[0].toLowerCase() : null;
 
-  // 2. Extract phone
-  const phoneMatch = allText.match(PHONE_REGEX);
+  // 4. Extract phone
+  const phoneMatch = allUserText.match(PHONE_REGEX);
   const cleanPhone = phoneMatch ? phoneMatch[0].trim() : 'Not provided';
 
-  // 3. Extract reporter name
+  // 5. Civic problem keywords:
+  const issueKeywords = /(pothole|road fracture|broken road|crater|streetlight|street light|light|lamp|pole|dark street|bulb|sewage|drain|gutter|manhole|sewer|water logging|flooding|flood|standing water|puddle|leak|park|bench|swing|playground|wall|damaged building|gate|rubble|debris|garbage|wire|spark)/i;
+
+  // Check for self-correction in user messages (e.g. "sorry that was a mistake", "actually", "no wait")
+  const correctionPattern = /(sorry|mistake|actually|no wait|instead|change that)/i;
+
+  let problemMsg = null;
+  // Search from latest to earliest so that corrections or updated statements take precedence!
+  for (let i = userMessages.length - 1; i >= 0; i--) {
+    const msg = userMessages[i];
+    if (isGreeting(msg)) continue;
+    if (cleanEmail && msg.includes(cleanEmail)) continue;
+    if (issueKeywords.test(msg)) {
+      problemMsg = msg;
+      break;
+    }
+  }
+
+  // Determine Category based on problem
+  let category = 'Other Community Issue';
+  const searchText = (problemMsg || allUserText).toLowerCase();
+  if (/rubble|debris|garbage|litter|rubbish|trash|waste|junk|scrap|scattered/i.test(searchText)) {
+    category = 'Other Community Issue';
+  } else if (/streetlight|street light|light|lamp|bulb|dark/i.test(searchText) && !/wire/i.test(searchText)) {
+    category = 'Broken Streetlight';
+  } else if (/\bpothole\b|\bcrater\b|road fracture|broken road|road damage|cracked road/i.test(searchText)) {
+    category = 'Pothole';
+  } else if (/sewage|drain|gutter|manhole|sewer|leak|overflow/i.test(searchText)) {
+    category = 'Sewage';
+  } else if (/flood|water logging|standing water|puddle/i.test(searchText)) {
+    category = 'Flooding';
+  } else if (/park|bench|swing|playground/i.test(searchText)) {
+    category = 'Damaged Park';
+  } else if (/building|wall|gate|concrete/i.test(searchText)) {
+    category = 'Damaged Building';
+  }
+
+  // 6. Extract reporter name
   let reporterName = null;
-  // Strategy A: regex
   const namePattern = /(?:my name is|i am|this is|i'm)\s+([A-Za-z\s]+?)(?:[.,;\n]|$|and\s|my\s|email\s|phone\s|\d)/i;
-  const nameMatch = allText.match(namePattern);
+  const nameMatch = allUserText.match(namePattern);
   if (nameMatch && nameMatch[1].trim().length > 1) {
     reporterName = nameMatch[1].trim().replace(/[.,!]/g, '');
   }
 
-  // Strategy B: If bot asked for name, the next user message is the name
   if (!reporterName) {
     for (let i = 0; i < turns.length - 1; i++) {
       if (turns[i].role === 'bot' && /name/i.test(turns[i].text)) {
         const candidate = turns[i + 1].text.trim().replace(/[.,!]/g, '');
-        if (candidate && !candidate.includes('@') && candidate.length < 50 && !/\d/.test(candidate)) {
+        // Candidate is NOT a name if it's a greeting, an issue description, an email, or contains location words
+        if (candidate && !candidate.includes('@') && candidate.length < 40 && !/\d/.test(candidate) &&
+            !isGreeting(candidate) && !issueKeywords.test(candidate) && !correctionPattern.test(candidate) &&
+            !/(street|road|near|block|sector|gate|avenue)/i.test(candidate)) {
           reporterName = candidate;
           break;
         }
@@ -243,76 +369,85 @@ function processFallbackConversation(message, history) {
     }
   }
 
-  // Strategy C: Any short user message without @, digits, or issue keywords
-  if (!reporterName) {
-    const candidate = userMessages.find(m => {
-      const clean = m.replace(/[.,!]/g, '').trim();
-      return clean.length >= 2 &&
-        clean.length <= 30 &&
-        !clean.includes('@') &&
-        !/\d/.test(clean) &&
-        !/(pothole|street|road|light|sewage|drain|flood|near|beside|crossing|flyover)/i.test(clean);
-    });
-    if (candidate) reporterName = candidate.replace(/[.,!]/g, '').trim();
-  }
-
-  // 4. Extract location
+  // 7. Extract Location
   let location = null;
-  const locationClues = ['street', 'road', 'block', 'sector', 'near', 'outside', 'gate', 'lane', 'avenue', 'behind', 'opposite', 'corner', 'beside', 'flyover', 'crossing'];
-  // Strategy A: If bot asked for location, next user message is location
+  const locationClues = ['street', 'road', 'block', 'sector', 'near', 'outside', 'gate', 'lane', 'avenue', 'behind', 'opposite', 'corner', 'beside', 'flyover', 'crossing', 'roundabout', 'phase'];
+
+  // Check if bot asked for location
   for (let i = 0; i < turns.length - 1; i++) {
     if (turns[i].role === 'bot' && /location|where/i.test(turns[i].text)) {
       const candidate = turns[i + 1].text.trim();
-      if (candidate && !candidate.includes('@') && !/my name is/i.test(candidate)) {
+      // CRITICAL: A candidate is NOT a location if it is a self-correction or a problem description!
+      if (candidate && !candidate.includes('@') && !/my name is/i.test(candidate) && !isGreeting(candidate) &&
+          !correctionPattern.test(candidate) && !issueKeywords.test(candidate)) {
         location = candidate.replace(/my name is.*/i, '').replace(/email.*/i, '').trim();
         break;
       }
     }
   }
 
-  // Strategy B: Clue matching
+  // Clue matching in any user message (that isn't purely the problem or email)
   if (!location) {
     for (const msg of userMessages) {
+      if (msg === reporterName || (cleanEmail && msg.includes(cleanEmail))) continue;
+      if (msg === problemMsg && !/(near|outside|gate|behind|opposite|beside|corner|block|sector|lane)/i.test(msg)) {
+        continue;
+      }
       const lmsg = msg.toLowerCase();
       if (locationClues.some(clue => lmsg.includes(clue))) {
-        location = msg.replace(/my name is.*/i, '').replace(/email.*/i, '').trim();
-        break;
+        let locCandidate = msg.replace(/my name is.*/i, '').replace(/email.*/i, '').trim();
+        if (locCandidate.length > 3 && locCandidate !== problemMsg && !issueKeywords.test(locCandidate)) {
+          location = locCandidate;
+          break;
+        }
       }
     }
   }
 
-  // 5. Determine category & description
-  let category = 'Other Community Issue';
-  const lowerAll = allText.toLowerCase();
-  if (lowerAll.includes('light') || lowerAll.includes('lamp') || lowerAll.includes('pole')) {
-    category = 'Broken Streetlight';
-  } else if (lowerAll.includes('pothole') || lowerAll.includes('road') || lowerAll.includes('asphalt') || lowerAll.includes('crater')) {
-    category = 'Pothole';
-  } else if (lowerAll.includes('sewage') || lowerAll.includes('drain') || lowerAll.includes('gutter') || lowerAll.includes('leak')) {
-    category = 'Sewage / Flooding';
-  } else if (lowerAll.includes('flood') || lowerAll.includes('water') || lowerAll.includes('puddle')) {
-    category = 'Sewage / Flooding';
-  } else if (lowerAll.includes('park') || lowerAll.includes('bench') || lowerAll.includes('swing') || lowerAll.includes('building')) {
-    category = 'Park / Building Infrastructure';
+  // Clean problem description
+  let cleanDescription = problemMsg || '';
+  if (cleanDescription) {
+    cleanDescription = cleanDescription
+      .replace(/my name is [A-Za-z\s]+/gi, '')
+      .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '')
+      .replace(/(\+?\d[\d\s-]{7,15}\d)/g, '')
+      .replace(/^(uh|no|sorry|that was a mistake|actually)[,.\s]*/gi, '')
+      .trim();
   }
 
-  const initialProblem = userMessages[0] || message;
-  let cleanDescription = initialProblem;
-  if (cleanDescription.length < 10) {
-    const descriptiveMsg = userMessages.find(m => m.length > 8 && !m.includes('@') && m !== location && m !== reporterName);
-    if (descriptiveMsg) cleanDescription = descriptiveMsg;
-  }
+  // -------------------------------------------------------------
+  // DIALOGUE FLOW
+  // -------------------------------------------------------------
 
-  // Step A: Need location
-  if (!location) {
+  // Step 1: Greeting or no problem yet
+  if (!problemMsg || isGreeting(problemMsg)) {
     return {
-      reply: "Got it. Could you please share the specific location (street name, block, or nearby landmark) where this issue is located?",
+      reply: "Hello! Welcome to PatchWork. I'm Patch, your community reporting assistant. Could you please describe what infrastructure issue you'd like to report? (For example: a pothole, broken streetlight, sewage leak, or flooding)",
       is_complete: false,
       extracted_data: null
     };
   }
 
-  // Step B: Need name
+  // If user just corrected themselves in the latest message
+  if (correctionPattern.test(currentMsg)) {
+    return {
+      reply: `Got it, thank you for clarifying! I've updated your report to ${category !== 'Other Community Issue' ? category.toLowerCase() : 'this issue'}. Where exactly is this located? (Please share the street name, block, or a nearby landmark)`,
+      is_complete: false,
+      extracted_data: null
+    };
+  }
+
+  // Step 2: Problem is known, but Location is missing
+  if (!location) {
+    let problemLabel = category !== 'Other Community Issue' ? category.toLowerCase() : 'this community issue';
+    return {
+      reply: `I understand, thank you for reporting this ${problemLabel}. Where exactly is this located? (Please share the street name, block, or nearby landmark)`,
+      is_complete: false,
+      extracted_data: null
+    };
+  }
+
+  // Step 3: Location is known, but Name is missing
   if (!reporterName) {
     return {
       reply: "Thank you for the location. Could you please share your full name for the report?",
@@ -321,30 +456,30 @@ function processFallbackConversation(message, history) {
     };
   }
 
-  // Step C: Need MANDATORY email
+  // Step 4: Name is known, but Email is missing
   if (!cleanEmail) {
     return {
-      reply: `Thanks ${reporterName}. Could you please provide your email address? We need this to send your ticket confirmation and status updates.`,
+      reply: `Thanks ${reporterName}. Could you please provide your email address? We need this to send your ticket confirmation and live updates.`,
       is_complete: false,
       extracted_data: null
     };
   }
 
-  // Step D: Complete - all details collected!
-  const cleanPhoneStr = cleanPhone;
-  const cleanLocationStr = location || 'Community Area';
+  // Step 5: Everything is collected!
+  const finalCategory = category;
+  const finalDesc = cleanDescription || `${finalCategory} reported by resident.`;
 
   return {
-    reply: `Thank you ${reporterName}! I have officially logged your report for ${category} at ${cleanLocationStr}. A confirmation email has been dispatched to ${cleanEmail}.`,
+    reply: `Thank you ${reporterName}! I have officially logged your report for ${finalCategory} at ${location}. A confirmation email has been dispatched to ${cleanEmail}.`,
     is_complete: true,
     extracted_data: {
       reporter_name: reporterName,
-      contact: cleanPhoneStr,
+      contact: cleanPhone,
       email: cleanEmail,
-      location: cleanLocationStr,
-      category: category,
-      description: cleanDescription,
-      severity: 'medium'
+      location: location,
+      category: finalCategory,
+      description: finalDesc,
+      severity: /deep|burst|heavy|danger|urgent|critical|pitch black|flooded/i.test(allUserText) ? 'high' : 'medium'
     }
   };
 }

@@ -27,6 +27,7 @@ export default function App() {
   const [files, setFiles] = useState([]);
   const [uploadErrors, setUploadErrors] = useState([]);
   const [tab, setTab] = useState("chat");
+  const [gpsLocation, setGpsLocation] = useState(null);
   const [messages, setMessages] = useState([
     { role: "assistant", text: GREETING },
   ]);
@@ -131,6 +132,7 @@ export default function App() {
         message: text,
         history,
         media_urls: mediaUrls,
+        gps: gpsLocation,
       });
       setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
       if (data.is_complete && data.report && data.report.id) {
@@ -200,7 +202,7 @@ export default function App() {
           <li>
             <b>1.</b>
             <span>
-              Add photos/video<small>Optional</small>
+              Add photos/video & GPS<small>Optional</small>
             </span>
           </li>
           <li>
@@ -222,6 +224,9 @@ export default function App() {
             onDismissError={(id) =>
               setUploadErrors((e) => e.filter((x) => x.id !== id))
             }
+            gpsLocation={gpsLocation}
+            onGpsChange={setGpsLocation}
+            notify={notify}
           />
 
           <section className="card" aria-labelledby="assistant-title">
@@ -280,7 +285,11 @@ export default function App() {
             </div>
 
             <div hidden={tab !== "voice"}>
-              <VoicePanel notify={notify} mediaUrls={mediaUrls} />
+              <VoicePanel
+                notify={notify}
+                mediaUrls={mediaUrls}
+                gpsLocation={gpsLocation}
+              />
             </div>
           </section>
         </div>

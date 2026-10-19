@@ -85,9 +85,9 @@ export async function getLatestVoiceTicket(callId) {
   return request(`/api/vapi/latest-ticket${query}`);
 }
 
-// POST /api/chat { message, history:[{sender:'bot'|'user', text}], media_urls }
+// POST /api/chat { message, history:[{sender:'bot'|'user', text}], media_urls, gps }
 //   -> { reply, is_complete, report: null | { id, ... } }
-export async function sendChat({ message, history, media_urls }) {
+export async function sendChat({ message, history, media_urls, gps }) {
   if (MOCK) {
     await wait(900);
     const n = history.filter((h) => h.sender === "user").length + 1;
@@ -104,15 +104,20 @@ export async function sendChat({ message, history, media_urls }) {
         is_complete: false,
         report: null,
       };
+    const mockLoc = gps
+      ? `Main Area · 📍 GPS: ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}${
+          gps.address ? ` (${gps.address})` : ""
+        }`
+      : "Main Area";
     return {
-      reply: "Thank you! I have logged your report. Your ticket ID is PW-1048.",
+      reply: `Thank you! I have logged your report. Your ticket ID is PW-1048.`,
       is_complete: true,
-      report: { id: "PW-1048" },
+      report: { id: "PW-1048", location: mockLoc },
     };
   }
   return request("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, history, media_urls }),
+    body: JSON.stringify({ message, history, media_urls, gps }),
   });
 }
