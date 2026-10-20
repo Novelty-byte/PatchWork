@@ -5,7 +5,12 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const apiKey = process.env.VAPI_API_KEY;
-const assistantId = process.env.VAPI_ASSISTANT_ID || 'f99f9a56-214a-47a1-9449-1de9f2d5dbbe';
+const assistantId = process.env.VAPI_ASSISTANT_ID;
+
+if (!apiKey || !assistantId) {
+  console.error("❌ Error: VAPI_API_KEY and VAPI_ASSISTANT_ID must be configured in .env");
+  process.exit(1);
+}
 const serverUrl = 'https://patch-work-rho.vercel.app/api/vapi/webhook';
 
 async function updateAssistant() {

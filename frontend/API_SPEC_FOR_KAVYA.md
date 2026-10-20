@@ -101,8 +101,8 @@ The resident taps the microphone button to talk directly to the AI assistant.
      ```json
      {
        "success": true,
-       "publicKey": "94c8a77f-cf15-4354-91a0-f45b6f42e6d1",
-       "assistantId": "f99f9a56-214a-47a1-9449-1de9f2d5dbbe",
+       "publicKey": "your_vapi_public_key",
+       "assistantId": "your_vapi_assistant_id",
        "ready": true
      }
      ```
