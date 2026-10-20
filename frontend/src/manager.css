@@ -418,3 +418,104 @@ button.mg-card:hover {
     flex: 1;
   }
 }
+
+
+/* ===== Upvote feature ===== */
+.mg-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.mg-upvote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.mg-upvote-btn:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 8%, transparent);
+}
+.mg-upvote-btn.is-voted {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 12%, transparent);
+}
+.mg-upvote-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.mg-upvote-count {
+  font-weight: 700;
+}
+.mg-upvote-label {
+  font-size: 11px;
+}
+.mg-neighbors {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Priority highlight for cards with 3+ upvotes */
+.mg-card-priority {
+  border-color: color-mix(in srgb, var(--teal) 40%, transparent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 15%, transparent);
+}
+.badge-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: color-mix(in srgb, var(--teal) 15%, transparent);
+  color: var(--teal);
+  border: 1px solid color-mix(in srgb, var(--teal) 30%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+/* Upvote section inside detail panel */
+.mg-upvote-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.mg-upvote-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Status page upvote */
+.st-upvote-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.st-upvote {
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 24px;
+  border-width: 1.5px;
+  align-self: flex-start;
+}
+.st-upvote-msg {
+  font-size: 13px;
+  color: var(--teal);
+  font-weight: 500;
+}

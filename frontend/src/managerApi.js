@@ -69,6 +69,50 @@ export async function markSolved(id) {
   return data.report || {};
 }
 
+// --- Device ID (persisted per browser) ---
+function getDeviceId() {
+  let id = localStorage.getItem('pw_device_id');
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('pw_device_id', id);
+  }
+  return id;
+}
+
+export async function upvoteReport(id) {
+  if (MOCK) {
+    await wait(300);
+    const r = mockReports && mockReports.find(x => x.id === id);
+    if (!r) throw new Error('Not found');
+    const deviceId = getDeviceId();
+    if (!r.upvote_devices) r.upvote_devices = [];
+    if (!r.upvotes) r.upvotes = 0;
+    const alreadyVoted = r.upvote_devices.includes(deviceId);
+    if (alreadyVoted) {
+      r.upvote_devices = r.upvote_devices.filter(d => d !== deviceId);
+      r.upvotes = Math.max(0, r.upvotes - 1);
+    } else {
+      r.upvote_devices.push(deviceId);
+      r.upvotes += 1;
+    }
+    return { upvotes: r.upvotes, voted: !alreadyVoted };
+  }
+  const deviceId = getDeviceId();
+  const data = await request(`/api/reports/${encodeURIComponent(id)}/upvote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-device-id': deviceId }
+  });
+  return { upvotes: data.upvotes, voted: data.voted };
+}
+
+export async function getNearbyReports(lat, lng, radius = 100) {
+  if (MOCK) {
+    await wait(200);
+    return [];
+  }
+  const data = await request(`/api/reports/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
+  return data.reports || [];
+}
 let pending = null;
 export function fetchReports() {
   if (!pending) pending = loadReports().finally(() => { pending = null; });

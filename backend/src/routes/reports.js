@@ -133,6 +133,29 @@ const handleDashboard = async (req, res) => {
  * @desc    Public community dashboard: open reports stay indefinitely; solved reports stay 12 hours
  */
 router.get('/dashboard', handleDashboard);
+/**
+ * @route   GET /api/reports/nearby
+ * @desc    Find open reports within radius (default 100m) of a GPS coordinate
+ * @query   lat, lng, radius (metres, optional)
+ */
+router.get('/nearby', async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lng = parseFloat(req.query.lng);
+  const radius = parseFloat(req.query.radius) || 100;
+
+  if (isNaN(lat) || isNaN(lng)) {
+    return res.status(400).json({ success: false, error: 'lat and lng query parameters are required.' });
+  }
+
+  try {
+    const nearby = db.getNearbyReports(lat, lng, radius);
+    return res.json({ success: true, count: nearby.length, reports: nearby.map(sanitizeForPublic) });
+  } catch (err) {
+    console.error('Error fetching nearby reports:', err);
+    return res.status(500).json({ success: false, error: 'Failed to find nearby reports.' });
+  }
+});
+
 
 /**
  * @route   GET /api/reports/:id
@@ -177,5 +200,24 @@ const handleSolve = async (req, res) => {
  * @desc    One-click mark solved (triggers 12-hour removal countdown)
  */
 router.patch('/:id/solve', handleSolve);
+/**
+ * @route   POST /api/reports/:id/upvote
+ * @desc    Toggle upvote on a report (one per device per report, de-upvote if already voted)
+ */
+router.post('/:id/upvote', async (req, res) => {
+  // Identify device by custom header, then IP
+  const deviceId = req.headers['x-device-id'] || req.ip || 'unknown';
+
+  try {
+    const result = await db.upvoteReport(req.params.id, deviceId);
+    if (!result) {
+      return res.status(404).json({ success: false, error: 'Report not found.' });
+    }
+    return res.json({ success: true, upvotes: result.upvotes, voted: result.voted });
+  } catch (err) {
+    console.error('Error upvoting report:', err);
+    return res.status(500).json({ success: false, error: 'Failed to process upvote.' });
+  }
+});
 
 module.exports = router;

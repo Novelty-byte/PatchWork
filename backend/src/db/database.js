@@ -278,11 +278,68 @@ async function updateVerification(id, verificationResult) {
   return report ? attachGpsCoordinates(report) : null;
 }
 
+/**
+ * Upvote (or de-upvote) a report; enforces one vote per deviceId per report.
+ * Returns { upvotes, voted } or null if report not found.
+ */
+async function upvoteReport(id, deviceId) {
+  const localReport = reports.find(r => r.id === id);
+  if (!localReport) return null;
+
+  if (!Array.isArray(localReport.upvote_devices)) localReport.upvote_devices = [];
+  if (!localReport.upvotes) localReport.upvotes = 0;
+
+  const alreadyVoted = localReport.upvote_devices.includes(deviceId);
+  if (alreadyVoted) {
+    localReport.upvote_devices = localReport.upvote_devices.filter(d => d !== deviceId);
+    localReport.upvotes = Math.max(0, localReport.upvotes - 1);
+  } else {
+    localReport.upvote_devices.push(deviceId);
+    localReport.upvotes += 1;
+  }
+  saveDatabase();
+
+  if (isConfigured && supabase) {
+    try {
+      await supabase
+        .from('reports')
+        .update({ upvotes: localReport.upvotes, upvote_devices: localReport.upvote_devices })
+        .eq('id', id);
+    } catch (err) {
+      console.warn('?? Supabase upvoteReport error (using local store):', err.message);
+    }
+  }
+
+  return { upvotes: localReport.upvotes, voted: !alreadyVoted };
+}
+
+/**
+ * Find nearby open reports within radiusMeters using the Haversine formula (local cache only).
+ */
+function getNearbyReports(lat, lng, radiusMeters) {
+  function haversine(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  return reports.filter(r => {
+    if (r.status === 'solved') return false;
+    if (r.latitude == null || r.longitude == null) return false;
+    return haversine(lat, lng, r.latitude, r.longitude) <= radiusMeters;
+  });
+}
+
 module.exports = {
   createReport,
   getReportById,
   getDashboardReports,
   markReportSolved,
   updateVerification,
+  upvoteReport,
+  getNearbyReports,
   _getAllReports: () => reports
 };

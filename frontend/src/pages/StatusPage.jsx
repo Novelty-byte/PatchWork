@@ -12,9 +12,10 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
+  ThumbsUp,
   TriangleAlert,
 } from "lucide-react";
-import { getReport } from "../statusApi";
+import { getReport, upvoteReport } from "../statusApi";
 import "../status.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import { formatLocationWithGps } from "./ManagerPage.jsx";
@@ -123,7 +124,7 @@ export function NotFoundView() {
         <FileSearch size={28} />
       </span>
       <p className="st-eyebrow">REPORT NOT FOUND</p>
-      <h1>We couldn't find that report</h1>
+      <h1>We couldn&apos;t find that report</h1>
       <p className="st-sub">
         Check the report number and try opening the link again.
       </p>
@@ -148,16 +149,16 @@ function ErrorView({ onRetry }) {
         <TriangleAlert size={28} />
       </span>
       <p className="st-eyebrow is-clay">TEMPORARILY UNAVAILABLE</p>
-      <h1>We couldn't load your report</h1>
+      <h1>We couldn&apos;t load your report</h1>
       <p className="st-sub">
-        We're having trouble connecting right now. Please try again in a moment.
+        We&apos;re having trouble connecting right now. Please try again in a moment.
       </p>
       <div className="st-alert" role="alert">
         <Info size={18} />
         <div>
           <strong>No need to submit another report</strong>
           <span>
-            This only affects the status page. Your report details haven't
+            This only affects the status page. Your report details haven&apos;t
             changed.
           </span>
         </div>
@@ -193,6 +194,65 @@ function verInfo(v) {
     skipped: CircleHelp,
   };
   return { key, name: names[key], Icon: icons[key], reason: v && v.reason };
+}
+
+/* ---------- upvote button (status page) ---------- */
+function StatusUpvoteButton({ reportId }) {
+  const [upvotes, setUpvotes] = useState(0);
+  const [voted, setVoted] = useState(() => {
+    try {
+      const ids = JSON.parse(localStorage.getItem("pw_voted_reports") || "[]");
+      return ids.includes(reportId);
+    } catch { return false; }
+  });
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  async function handle() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const result = await upvoteReport(reportId);
+      setUpvotes(result.upvotes);
+      setVoted(result.voted);
+      // Persist voted state across pages
+      try {
+        const ids = JSON.parse(localStorage.getItem("pw_voted_reports") || "[]");
+        const next = result.voted
+          ? [...new Set([...ids, reportId])]
+          : ids.filter((id) => id !== reportId);
+        localStorage.setItem("pw_voted_reports", JSON.stringify(next));
+      } catch {}
+      setMsg(result.voted
+        ? `${result.upvotes} neighbor${result.upvotes === 1 ? "" : "s"} confirmed this issue.`
+        : "Your confirmation has been removed.");
+      setTimeout(() => setMsg(null), 3000);
+    } catch {
+      setMsg("Could not register vote. Please try again.");
+      setTimeout(() => setMsg(null), 3000);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="st-upvote-wrap">
+      <button
+        className={`mg-upvote-btn st-upvote${voted ? " is-voted" : ""}`}
+        onClick={handle}
+        disabled={loading}
+        aria-label={voted ? "Remove your confirmation" : "Confirm this issue affects you too"}
+      >
+        <ThumbsUp size={15} />
+        {upvotes > 0 && <span className="mg-upvote-count">{upvotes}</span>}
+        <span>{voted ? "You confirmed this" : "+1 Confirm this issue"}</span>
+      </button>
+      {msg && <p className="st-upvote-msg">{msg}</p>}
+      <p className="hint">
+        One confirmation per device. Click again to remove your vote.
+      </p>
+    </div>
+  );
 }
 
 /* ---------- main report view ---------- */
@@ -290,7 +350,7 @@ function ReportView({ report }) {
               rel="noreferrer"
               style={{ marginLeft: 8, fontSize: "12px", color: "var(--teal)", textDecoration: "underline" }}
             >
-              Open map ↗
+              Open map &nearr;
             </a>
           )}
         </p>
@@ -332,6 +392,18 @@ function ReportView({ report }) {
             </li>
           ))}
         </ol>
+
+        {/* Community upvote section */}
+        {!solved && (
+          <>
+            <hr className="st-hr" />
+            <h3 className="st-sec">Confirm this issue</h3>
+            <p className="st-sub" style={{ marginBottom: 12, fontSize: 14 }}>
+              Does this issue affect you too? Confirm it to help prioritise it.
+            </p>
+            <StatusUpvoteButton reportId={report.id} />
+          </>
+        )}
 
         {photos.length > 0 && (
           <>
@@ -407,7 +479,7 @@ export default function StatusPage() {
   );
 
   useEffect(() => {
-    document.title = "Report status – PatchWork";
+    document.title = "Report status \u2013 PatchWork";
     load();
   }, [load]);
 

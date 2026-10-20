@@ -13,13 +13,14 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
+  ThumbsUp,
   TriangleAlert,
   User,
   X,
 } from "lucide-react";
 import Toasts from "../components/Toasts.jsx";
 import { CATEGORIES } from "../components/UploadCard.jsx";
-import { fetchReports, markSolved } from "../managerApi";
+import { fetchReports, markSolved, upvoteReport } from "../managerApi";
 import "../status.css";
 import "../manager.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
@@ -35,8 +36,8 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 export function formatLocationWithGps(r) {
   if (!r) return "Location not specified";
   let loc = r.location || "Location not specified";
-  if (r.latitude && r.longitude && !loc.includes("📍 GPS:")) {
-    loc = `${loc} · 📍 GPS: ${Number(r.latitude).toFixed(5)}, ${Number(r.longitude).toFixed(5)}`;
+  if (r.latitude && r.longitude && !loc.includes("\uD83D\uDCCD GPS:")) {
+    loc = `${loc} \u00B7 \uD83D\uDCCD GPS: ${Number(r.latitude).toFixed(5)}, ${Number(r.longitude).toFixed(5)}`;
   }
   return loc;
 }
@@ -57,11 +58,11 @@ function endOf(r) {
   return null;
 }
 function statusLine(r) {
-  if (!isSolved(r)) return { text: "Open · waiting for a fix", tone: "normal" };
+  if (!isSolved(r)) return { text: "Open \u00B7 waiting for a fix", tone: "normal" };
   const end = endOf(r);
   if (!end) return { text: "Solved", tone: "solved" };
   const h = Math.max(0, Math.ceil((end - Date.now()) / HOUR));
-  return { text: `Solved · removes in ${h}h`, tone: "solved" };
+  return { text: `Solved \u00B7 removes in ${h}h`, tone: "solved" };
 }
 function verInfo(r) {
   const label = String(
@@ -107,12 +108,42 @@ const SevBadge = ({ r }) =>
     </span>
   ) : null;
 
+/* ---------- upvote button ---------- */
+function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
+  const [loading, setLoading] = useState(false);
+  async function handle(e) {
+    e.stopPropagation();
+    if (loading) return;
+    setLoading(true);
+    try {
+      await onUpvote(reportId);
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <button
+      className={`mg-upvote-btn${voted ? " is-voted" : ""}`}
+      onClick={handle}
+      disabled={loading}
+      aria-label={voted ? "Remove your confirmation" : "Confirm this issue"}
+      title={voted ? "Click to remove your vote" : "Confirm this issue affects you too"}
+    >
+      <ThumbsUp size={13} />
+      <span>{upvotes > 0 ? upvotes : ""}</span>
+      <span className="mg-upvote-label">{voted ? "Confirmed" : "+1 Confirm"}</span>
+    </button>
+  );
+}
+
 /* ---------- report card ---------- */
-function ReportCard({ r, onOpen }) {
+function ReportCard({ r, voted, onOpen, onUpvote }) {
   const st = statusLine(r);
   const thumb = r.media_urls && r.media_urls[0];
+  const upvotes = r.upvotes || 0;
+  const isHighPriority = upvotes >= 3;
   return (
-    <button className="mg-card" onClick={onOpen}>
+    <button className={`mg-card${isHighPriority ? " mg-card-priority" : ""}`} onClick={onOpen}>
       <div className="mg-thumb">
         {thumb && !isVideo(thumb) ? (
           <img
@@ -131,30 +162,49 @@ function ReportCard({ r, onOpen }) {
           <span className="badge badge-teal">{r.id}</span>
           <SevBadge r={r} />
           <Verification r={r} />
+          {isHighPriority && (
+            <span className="badge badge-priority">
+              <ThumbsUp size={11} /> Hot
+            </span>
+          )}
         </div>
         <h3>{r.category}</h3>
         <p className="mg-meta">
           <MapPin size={15} /> {formatLocationWithGps(r)}
         </p>
         <p className="mg-meta">
-          <User size={15} /> {r.reporter_name || "Anonymous resident"} ·{" "}
-          {ago(r.created_at)}
+          <User size={15} /> {r.reporter_name || "Anonymous resident"}{" "}
+          &middot; {ago(r.created_at)}
         </p>
         <p className={`mg-exp is-${st.tone}`}>
           <Clock size={15} /> {st.text}
         </p>
+        <div className="mg-card-foot" onClick={(e) => e.stopPropagation()}>
+          <UpvoteButton
+            reportId={r.id}
+            upvotes={upvotes}
+            voted={voted}
+            onUpvote={onUpvote}
+          />
+          {upvotes > 0 && (
+            <span className="mg-neighbors">
+              {upvotes} neighbor{upvotes === 1 ? "" : "s"} confirmed
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );
 }
 
 /* ---------- detail panel ---------- */
-function DetailPanel({ r, onClose, onAskSolve }) {
+function DetailPanel({ r, voted, onClose, onAskSolve, onUpvote }) {
   const [i, setI] = useState(0);
   const media = r.media_urls || [];
   const solved = isSolved(r);
   const st = statusLine(r);
   const ver = verInfo(r);
+  const upvotes = r.upvotes || 0;
 
   useEffect(() => {
     const esc = (e) => e.key === "Escape" && onClose();
@@ -245,7 +295,7 @@ function DetailPanel({ r, onClose, onAskSolve }) {
                   className="tiny"
                   style={{ display: "inline-block", marginTop: "4px", color: "var(--teal)", textDecoration: "underline" }}
                 >
-                  View on map ↗
+                  View on map &nearr;
                 </a>
               )}
             </div>
@@ -262,6 +312,24 @@ function DetailPanel({ r, onClose, onAskSolve }) {
           <div className={`mg-aibox v-${ver.key}`}>
             <Verification r={r} />
             <p>{ver.reason || "The AI has not checked this report."}</p>
+          </div>
+
+          {/* Community upvote in detail panel */}
+          <div className="mg-upvote-panel">
+            <span className="eyebrow">COMMUNITY CONFIRMATION</span>
+            <div className="mg-upvote-row">
+              <UpvoteButton
+                reportId={r.id}
+                upvotes={upvotes}
+                voted={voted}
+                onUpvote={onUpvote}
+              />
+              {upvotes > 0 && (
+                <span className="mg-neighbors">
+                  {upvotes} neighbor{upvotes === 1 ? "" : "s"} confirmed this issue
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -293,6 +361,14 @@ export default function ManagerPage() {
   const [confirm, setConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toasts, setToasts] = useState([]);
+  // Track which reports the current device has voted on (keyed by report id)
+  const [votedIds, setVotedIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("pw_voted_reports") || "[]");
+    } catch {
+      return [];
+    }
+  });
 
   const notify = useCallback((t) => {
     const id = Date.now() + Math.random();
@@ -311,7 +387,7 @@ export default function ManagerPage() {
   }, []);
 
   useEffect(() => {
-    document.title = "Live dashboard – PatchWork";
+    document.title = "Live dashboard \u2013 PatchWork";
     load();
     const t = setInterval(() => load(true), 30000);
     return () => clearInterval(t);
@@ -374,6 +450,36 @@ export default function ManagerPage() {
     } finally {
       setSaving(false);
       setConfirm(false);
+    }
+  }
+
+  async function handleUpvote(reportId) {
+    try {
+      const result = await upvoteReport(reportId);
+      // Update upvote count in local state
+      setState((s) => ({
+        ...s,
+        reports: s.reports.map((r) =>
+          r.id === reportId ? { ...r, upvotes: result.upvotes } : r,
+        ),
+      }));
+      // Toggle voted state
+      setVotedIds((prev) => {
+        const next = result.voted
+          ? [...new Set([...prev, reportId])]
+          : prev.filter((id) => id !== reportId);
+        try { localStorage.setItem("pw_voted_reports", JSON.stringify(next)); } catch {}
+        return next;
+      });
+      notify({
+        variant: "success",
+        title: result.voted ? "Issue confirmed!" : "Vote removed",
+        text: result.voted
+          ? `${result.upvotes} neighbor${result.upvotes === 1 ? "" : "s"} have confirmed this issue.`
+          : "Your confirmation has been removed.",
+      });
+    } catch {
+      notify({ variant: "error", title: "Couldn't register vote", text: "Please try again." });
     }
   }
 
@@ -497,9 +603,9 @@ export default function ManagerPage() {
             <span className="st-circle is-clay">
               <TriangleAlert size={28} />
             </span>
-            <h2 className="mg-h2">We couldn't load the reports</h2>
+            <h2 className="mg-h2">We couldn&apos;t load the reports</h2>
             <p className="st-sub">
-              We're having trouble connecting right now. Please try again in a
+              We&apos;re having trouble connecting right now. Please try again in a
               moment.
             </p>
             <button
@@ -547,7 +653,13 @@ export default function ManagerPage() {
         {state.kind === "ok" && visible.length > 0 && (
           <div className="mg-grid">
             {visible.map((r) => (
-              <ReportCard key={r.id} r={r} onOpen={() => setSelected(r.id)} />
+              <ReportCard
+                key={r.id}
+                r={r}
+                voted={votedIds.includes(r.id)}
+                onOpen={() => setSelected(r.id)}
+                onUpvote={handleUpvote}
+              />
             ))}
           </div>
         )}
@@ -556,8 +668,10 @@ export default function ManagerPage() {
       {selectedReport && (
         <DetailPanel
           r={selectedReport}
+          voted={votedIds.includes(selectedReport.id)}
           onClose={() => setSelected(null)}
           onAskSolve={() => setConfirm(true)}
+          onUpvote={handleUpvote}
         />
       )}
 
