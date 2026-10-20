@@ -230,7 +230,7 @@ button.mg-card:hover {
 .mg-overlay {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 1000;
   background: rgba(20, 58, 53, 0.45);
   display: flex;
   align-items: flex-end;
@@ -372,7 +372,7 @@ button.mg-card:hover {
   background: var(--surface);
 }
 .mg-confirm {
-  z-index: 70;
+  z-index: 1100;
 }
 
 @media (min-width: 640px) {
@@ -518,4 +518,160 @@ button.mg-card:hover {
   font-size: 13px;
   color: var(--teal);
   font-weight: 500;
+}
+
+
+/* ===== Map view ===== */
+.mg-view-toggle {
+  display: flex;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.mg-view-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.mg-view-btn:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+.mg-view-btn.is-active {
+  background: var(--teal);
+  color: #fff;
+}
+
+.mg-map-wrap {
+  position: relative;
+  width: 100%;
+  height: 540px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin-top: 4px;
+}
+.mg-map-container {
+  width: 100%;
+  height: 100%;
+}
+.mg-map-nogps {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Leaflet popup override */
+.map-popup-wrap .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+.map-popup-wrap .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+.map-popup {
+  width: 220px;
+}
+.map-popup-img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+}
+.map-popup-body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.map-popup-id {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0d9488;
+  letter-spacing: 0.04em;
+}
+.map-popup-cat {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+.map-popup-loc {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-popup-btn {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #0d9488;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+}
+.map-popup-btn:hover {
+  background: #0f766e;
+}
+
+/* Off-screen direction arrows */
+.map-arrows-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 800;
+}
+.map-arrow {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  background: #dc2626;
+  border-radius: 50%;
+  transform-origin: center;
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: transform 0.15s;
+  translate: -50% -50%;
+}
+.map-arrow:hover {
+  background: #b91c1c;
+  transform: scale(1.15) rotate(var(--r, 0deg));
+}
+
+@media (max-width: 640px) {
+  .mg-map-wrap { height: 380px; }
+  .mg-view-btn { padding: 6px 8px; font-size: 12px; }
 }

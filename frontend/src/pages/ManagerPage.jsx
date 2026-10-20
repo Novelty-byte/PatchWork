@@ -9,6 +9,7 @@ import {
   ImageOff,
   Inbox,
   LayoutGrid,
+  Map,
   MapPin,
   Plus,
   RefreshCw,
@@ -21,6 +22,7 @@ import {
 import Toasts from "../components/Toasts.jsx";
 import { CATEGORIES } from "../components/UploadCard.jsx";
 import { fetchReports, markSolved, upvoteReport } from "../managerApi";
+import DashboardMap from "../components/DashboardMap.jsx";
 import "../status.css";
 import "../manager.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
@@ -357,6 +359,7 @@ export default function ManagerPage() {
   const [cat, setCat] = useState("all");
   const [sev, setSev] = useState("all");
   const [sort, setSort] = useState("newest");
+  const [viewMode, setViewMode] = useState("cards"); // "cards" | "map"
   const [selected, setSelected] = useState(null);
   const [confirm, setConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -575,6 +578,23 @@ export default function ManagerPage() {
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
           </select>
+          {/* Cards / Map toggle */}
+          <div className="mg-view-toggle" role="group" aria-label="View mode">
+            <button
+              className={`mg-view-btn${viewMode === "cards" ? " is-active" : ""}`}
+              onClick={() => setViewMode("cards")}
+              aria-pressed={viewMode === "cards"}
+            >
+              <LayoutGrid size={15} /> Cards
+            </button>
+            <button
+              className={`mg-view-btn${viewMode === "map" ? " is-active" : ""}`}
+              onClick={() => setViewMode("map")}
+              aria-pressed={viewMode === "map"}
+            >
+              <Map size={15} /> Map
+            </button>
+          </div>
         </div>
 
         {state.kind === "loading" && (
@@ -650,7 +670,7 @@ export default function ManagerPage() {
           </div>
         )}
 
-        {state.kind === "ok" && visible.length > 0 && (
+        {state.kind === "ok" && visible.length > 0 && viewMode === "cards" && (
           <div className="mg-grid">
             {visible.map((r) => (
               <ReportCard
@@ -662,6 +682,13 @@ export default function ManagerPage() {
               />
             ))}
           </div>
+        )}
+
+        {state.kind === "ok" && viewMode === "map" && (
+          <DashboardMap
+            reports={state.reports}
+            onOpenReport={(id) => setSelected(id)}
+          />
         )}
       </main>
 
