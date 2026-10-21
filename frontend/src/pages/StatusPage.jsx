@@ -39,12 +39,12 @@ export function Layout({ children }) {
     <div className="st-page">
       <header className="st-nav">
         <div className="st-nav-inner">
-          <Link to="/report" className="st-brand">
+          <a href="https://patch-work-app.vercel.app" className="st-brand">
             <span className="st-mark">
-              <LayoutGrid size={18} />
+              <img src="/patchwork-logo.jpeg" alt="PatchWork" style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover", display: "block" }} />
             </span>
             PatchWork
-          </Link>
+          </a>
           <div className="nav-right">
             <Link to="/dashboard" className="st-link">
               Dashboard

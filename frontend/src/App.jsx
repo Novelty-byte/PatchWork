@@ -158,12 +158,12 @@ export default function App() {
     <div className="page">
       <header className="nav">
         <div className="container nav-inner">
-          <Link className="brand" to="/report">
+          <a className="brand" href="https://patch-work-app.vercel.app">
             <span className="brand-mark">
-              <Sprout size={20} />
+              <img src="/patchwork-logo.jpeg" alt="PatchWork" style={{ width: 24, height: 24, borderRadius: 4, objectFit: "cover", display: "block" }} />
             </span>
             PatchWork
-          </Link>
+          </a>
           <div className="nav-right">
             <Link className="nav-link" to="/dashboard">
               Dashboard <ArrowUpRight size={14} />

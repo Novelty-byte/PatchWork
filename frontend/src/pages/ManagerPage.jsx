@@ -512,12 +512,12 @@ export default function ManagerPage() {
     <div className="st-page">
       <header className="st-nav">
         <div className="mg-bar">
-          <Link to="/report" className="st-brand">
+          <a href="https://patch-work-app.vercel.app" className="st-brand">
             <span className="st-mark">
-              <LayoutGrid size={18} />
+              <img src="/patchwork-logo.jpeg" alt="PatchWork" style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover", display: "block" }} />
             </span>
             PatchWork
-          </Link>
+          </a>
           <div className="mg-bar-right">
             <span className="badge badge-teal mg-count">{openCount} open</span>
             <button

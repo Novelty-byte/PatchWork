@@ -16,7 +16,7 @@ import {
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import "../landing.css";
 
-const LOGO = "/PatchWork_Community_Logo.webp";
+const LOGO = "/patchwork-logo.jpeg";
 
 function useReveal() {
   useEffect(() => {
@@ -99,10 +99,10 @@ export default function Landing() {
     <div className="lp">
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
-          <Link to="/report" className="lp-brand">
+          <a href="https://patch-work-app.vercel.app" className="lp-brand">
             <img src={LOGO} alt="" className="lp-brand-logo" />
             PatchWork
-          </Link>
+          </a>
           <div className="lp-nav-right">
             <Link to="/dashboard" className="lp-nav-link">
               Dashboard <ArrowUpRight size={14} />
