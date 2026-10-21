@@ -20,20 +20,13 @@ import "../status.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import BgCanvas from "../components/BgCanvas.jsx";
 import Confetti from "../components/Confetti.jsx";
-import { formatLocationWithGps } from "./ManagerPage.jsx";
-
-/* ---------- helpers ---------- */
-const time12 = (d) =>
-  d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-const month = (d) => d.toLocaleString("en-GB", { month: "short" });
-const fmtLong = (iso) => {
-  const d = new Date(iso);
-  return `${d.getDate()} ${month(d)} ${d.getFullYear()} at ${time12(d)}`;
-};
-const fmtShort = (iso) => {
-  const d = new Date(iso);
-  return `${d.getDate()} ${month(d)}, ${time12(d)}`;
-};
+import {
+  formatLocationWithGps,
+  fmtLong,
+  fmtShort,
+  verInfo,
+  isSolved,
+} from "../reportUtils.js";
 
 /* ---------- shared layout ---------- */
 export function Layout({ children }) {
@@ -163,28 +156,7 @@ function ErrorView({ onRetry }) {
   );
 }
 
-/* ---------- AI verification ---------- */
-function verInfo(v) {
-  const label = String((v && v.label) || "").toLowerCase();
-  let key = "skipped";
-  if (label === "verified") key = "verified";
-  else if (label.includes("not match") || label.includes("mismatch"))
-    key = "mismatch";
-  else if (label.includes("unclear")) key = "unclear";
-  const names = {
-    verified: "Verified by AI",
-    unclear: "Photo unclear",
-    mismatch: "Does not match",
-    skipped: "Not checked",
-  };
-  const icons = {
-    verified: ShieldCheck,
-    unclear: CircleHelp,
-    mismatch: TriangleAlert,
-    skipped: CircleHelp,
-  };
-  return { key, name: names[key], Icon: icons[key], reason: v && v.reason };
-}
+
 
 /* ---------- upvote button (status page) ---------- */
 function StatusUpvoteButton({ reportId }) {

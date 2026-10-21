@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import BgCanvas from "../components/BgCanvas.jsx";
+import { fetchReports } from "../managerApi";
 import "../landing.css";
 
 const LOGO = "/patchwork-logo.jpeg";
@@ -63,35 +64,40 @@ function useScrollBar() {
 function useCountUp(target, duration = 1600) {
   const [value, setValue] = useState(0);
   const ref = useRef(null);
-  const started = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || started.current) return;
+    if (!el) return;
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    if (prefersReduced) { setValue(target); return; }
+    if (prefersReduced) {
+      setValue(target);
+      return;
+    }
+    let animId;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !started.current) {
-          started.current = true;
+        if (entries[0].isIntersecting) {
           const start = performance.now();
           function step(now) {
             const elapsed = now - start;
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
             setValue(Math.round(eased * target));
-            if (progress < 1) requestAnimationFrame(step);
+            if (progress < 1) animId = requestAnimationFrame(step);
           }
-          requestAnimationFrame(step);
+          animId = requestAnimationFrame(step);
           io.disconnect();
         }
       },
-      { threshold: 0.4 }
+      { threshold: 0.3 }
     );
     io.observe(el);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      if (animId) cancelAnimationFrame(animId);
+    };
   }, [target, duration]);
 
   return [value, ref];
@@ -261,6 +267,40 @@ const FEATURES = [
 export default function Landing() {
   useReveal();
   useScrollBar();
+  const [stats, setStats] = useState(STATS);
+
+  useEffect(() => {
+    let unmounted = false;
+    fetchReports()
+      .then((reports) => {
+        if (unmounted || !Array.isArray(reports) || reports.length === 0) return;
+        const filed = reports.length;
+        const solvedCount = reports.filter(
+          (r) => String(r.status).toLowerCase() === "solved"
+        ).length;
+        const solveRate = filed > 0 ? Math.round((solvedCount / filed) * 100) : 98;
+        const upvotesTotal = reports.reduce((acc, r) => acc + (r.upvotes || 0), 0);
+        const neighbors = filed + upvotesTotal;
+        const areas = new Set(
+          reports
+            .map((r) => (r.location || "").split(",")[0].trim())
+            .filter(Boolean)
+        );
+        const sectors = Math.max(areas.size, 1);
+
+        setStats([
+          { value: filed, label: "Reports tracked", suffix: filed >= 10 ? "+" : "" },
+          { value: neighbors, label: "Neighbors helped", suffix: neighbors >= 10 ? "+" : "" },
+          { value: solveRate, label: "Issues resolved", suffix: "%" },
+          { value: sectors, label: "Neighborhood sectors", suffix: "" },
+        ]);
+      })
+      .catch(() => {});
+
+    return () => {
+      unmounted = true;
+    };
+  }, []);
 
   return (
     <div className="lp">
@@ -323,7 +363,7 @@ export default function Landing() {
       {/* ── Community stats bar ── */}
       <section className="lp-stats">
         <div className="lp-wrap lp-stats-in">
-          {STATS.map((s) => (
+          {stats.map((s) => (
             <StatItem key={s.label} value={s.value} label={s.label} suffix={s.suffix} />
           ))}
         </div>

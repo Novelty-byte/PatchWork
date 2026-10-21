@@ -3,7 +3,7 @@ import { ArrowUp, Sparkles } from 'lucide-react';
 
 const CHIPS = ['Near the main gate', 'Near the park', 'Type a location'];
 
-export default function ChatPanel({ messages, typing, onSend, children, showChips }) {
+export default function ChatPanel({ messages, typing, onSend, children, showChips, chips = CHIPS }) {
   const [text, setText] = useState('');
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -38,7 +38,7 @@ export default function ChatPanel({ messages, typing, onSend, children, showChip
         ))}
         {showChips && !typing && (
           <div className="chips">
-            {CHIPS.map((c) => (
+            {(chips || CHIPS).map((c) => (
               <button
                 key={c}
                 type="button"

@@ -70,7 +70,7 @@ export async function markSolved(id) {
 }
 
 // --- Device ID (persisted per browser) ---
-function getDeviceId() {
+export function getDeviceId() {
   let id = localStorage.getItem('pw_device_id');
   if (!id) {
     id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -105,14 +105,6 @@ export async function upvoteReport(id) {
   return { upvotes: data.upvotes, voted: data.voted };
 }
 
-export async function getNearbyReports(lat, lng, radius = 100) {
-  if (MOCK) {
-    await wait(200);
-    return [];
-  }
-  const data = await request(`/api/reports/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
-  return data.reports || [];
-}
 let pending = null;
 export function fetchReports() {
   if (!pending) pending = loadReports().finally(() => { pending = null; });

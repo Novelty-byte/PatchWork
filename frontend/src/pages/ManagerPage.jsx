@@ -29,74 +29,19 @@ import "../status.css";
 import "../manager.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 
-const HOUR = 3600e3;
+import {
+  HOUR,
+  isSolved,
+  isVideo,
+  cap,
+  formatLocationWithGps,
+  ago,
+  endOf,
+  statusLine,
+  verInfo,
+} from "../reportUtils.js";
 
-/* ---------- helpers ---------- */
-const isSolved = (r) => String(r.status).toLowerCase() === "solved";
-const isVideo = (u) =>
-  /\.(mp4|mov|webm)(\?|$)/i.test(u) || u.startsWith("data:video");
-const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-
-export function formatLocationWithGps(r) {
-  if (!r) return "Location not specified";
-  let loc = r.location || "Location not specified";
-  if (r.latitude && r.longitude && !loc.includes("\uD83D\uDCCD GPS:")) {
-    loc = `${loc} \u00B7 \uD83D\uDCCD GPS: ${Number(r.latitude).toFixed(5)}, ${Number(r.longitude).toFixed(5)}`;
-  }
-  return loc;
-}
-
-function ago(iso) {
-  const m = Math.max(
-    1,
-    Math.round((Date.now() - new Date(iso).getTime()) / 60000),
-  );
-  if (m < 60) return `${m}m ago`;
-  const h = Math.round(m / 60);
-  return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
-}
-function endOf(r) {
-  if (r.expires_at) return new Date(r.expires_at).getTime();
-  if (isSolved(r) && r.solved_at)
-    return new Date(r.solved_at).getTime() + 12 * HOUR;
-  return null;
-}
-function statusLine(r) {
-  if (!isSolved(r))
-    return { text: "Open \u00B7 waiting for a fix", tone: "normal" };
-  const end = endOf(r);
-  if (!end) return { text: "Solved", tone: "solved" };
-  const h = Math.max(0, Math.ceil((end - Date.now()) / HOUR));
-  return { text: `Solved \u00B7 removes in ${h}h`, tone: "solved" };
-}
-function verInfo(r) {
-  const label = String(
-    (r.verification && r.verification.label) || "",
-  ).toLowerCase();
-  let key = "skipped";
-  if (label === "verified") key = "verified";
-  else if (label.includes("not match") || label.includes("mismatch"))
-    key = "mismatch";
-  else if (label.includes("unclear")) key = "unclear";
-  const names = {
-    verified: "Verified",
-    unclear: "Unclear",
-    mismatch: "Does not match",
-    skipped: "Not checked",
-  };
-  const icons = {
-    verified: ShieldCheck,
-    unclear: CircleHelp,
-    mismatch: TriangleAlert,
-    skipped: CircleHelp,
-  };
-  return {
-    key,
-    name: names[key],
-    Icon: icons[key],
-    reason: r.verification && r.verification.reason,
-  };
-}
+export { formatLocationWithGps };
 
 function Verification({ r }) {
   const { key, name, Icon } = verInfo(r);

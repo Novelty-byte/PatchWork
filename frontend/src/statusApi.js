@@ -5,6 +5,8 @@ const MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const fail = (kind) => Object.assign(new Error(kind), { kind });
 
+export { upvoteReport } from './managerApi.js';
+
 const art = (a, b) =>
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
@@ -65,35 +67,4 @@ export function getReport(id) {
   const p = fetchReport(id).finally(() => inflight.delete(id));
   inflight.set(id, p);
   return p;
-}
-
-// --- Device ID (persisted per browser) ---
-function getDeviceId() {
-  let id = localStorage.getItem('pw_device_id');
-  if (!id) {
-    id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('pw_device_id', id);
-  }
-  return id;
-}
-
-export async function upvoteReport(id) {
-  if (MOCK) {
-    await wait(300);
-    return { upvotes: Math.floor(Math.random() * 10) + 1, voted: true };
-  }
-  const deviceId = getDeviceId();
-  let res;
-  try {
-    res = await fetch(`${BASE}/api/reports/${encodeURIComponent(id)}/upvote`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-device-id': deviceId }
-    });
-  } catch {
-    throw fail('error');
-  }
-  if (!res.ok) throw fail('error');
-  const data = await res.json().catch(() => null);
-  if (!data || data.success === false) throw fail('error');
-  return { upvotes: data.upvotes, voted: data.voted };
 }

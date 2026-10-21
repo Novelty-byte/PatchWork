@@ -197,6 +197,22 @@ export default function App() {
     { label: "Get confirmation", note: "" },
   ];
 
+  // Contextual quick-reply chips
+  const lastMsg = messages[messages.length - 1];
+  const isAssistant = lastMsg?.role === "assistant";
+  const isLocationPrompt =
+    isAssistant &&
+    /where|location|place|spot|street|landmark/i.test(lastMsg?.text || "");
+  const isInitialPrompt = messages.length === 1 && isAssistant;
+
+  const quickChips = isLocationPrompt
+    ? ["Near the main gate", "Near the park", "Outside Block A", "Type a location"]
+    : isInitialPrompt
+      ? ["Broken streetlight", "Pothole on the road", "Flooding / sewage leak", "Damaged park equipment"]
+      : null;
+
+  const showChips = !done && Boolean(quickChips && quickChips.length > 0);
+
   return (
     <div className="page" style={{ position: "relative" }}>
       {/* ── Aurora background ── */}
@@ -331,7 +347,8 @@ export default function App() {
                   messages={messages}
                   typing={typing}
                   onSend={handleSend}
-                  showChips={false}
+                  showChips={showChips}
+                  chips={quickChips || undefined}
                 >
                   {done && (
                     <div className="st-done">
