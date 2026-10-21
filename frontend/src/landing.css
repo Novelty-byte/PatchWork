@@ -333,3 +333,189 @@
     transform: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────
+   COMMUNITY ENHANCEMENTS — appended to landing.css
+   ───────────────────────────────────────────────────────── */
+
+/* ── 3rd blob: sky-blue ── */
+.lp-blob-c {
+  width: 220px;
+  height: 220px;
+  background: var(--blue-bg);
+  opacity: 0.55;
+  top: 35%;
+  right: -70px;
+  animation: lp-float 13s ease-in-out infinite;
+}
+
+/* ── Hero canvas wrapper ── */
+.lp-hero {
+  position: relative;
+}
+
+/* ── Blue chip (neighbor confirm) ── */
+.lp-chip-blue {
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* ── Ticket enhanced glow ── */
+.lp-ticket {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12), var(--green-glow) !important;
+}
+
+/* ────────────── STATS BAR ────────────── */
+.lp-stats {
+  background: var(--community-grad);
+  padding: 40px 0;
+}
+.lp-stats-in {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  text-align: center;
+}
+.lp-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+.lp-stat-val {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.lp-stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+.lp-stat-suffix {
+  display: inline;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* ────────────── QUOTE CAROUSEL ────────────── */
+.lp-quotes {
+  padding: 64px 0;
+  overflow: hidden;
+}
+.lp-quotes-wrap {
+  position: relative;
+}
+.lp-quote-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--teal);
+  border-radius: 18px;
+  padding: 28px 28px 24px;
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 130px;
+  transition: border-color 0.4s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+}
+.lp-quote-card.is-blue {
+  border-left-color: var(--blue);
+}
+.lp-quote-text {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--ink);
+  margin: 0 0 16px;
+  font-style: italic;
+}
+.lp-quote-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lp-quote-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--community-grad);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.lp-quote-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.lp-quote-area {
+  font-size: 12px;
+  color: var(--muted);
+}
+.lp-quote-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+.lp-quote-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+  border: 0;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+  padding: 0;
+}
+.lp-quote-dot.is-active {
+  background: var(--teal);
+  transform: scale(1.4);
+}
+
+/* ── Fade slide for quotes ── */
+@keyframes quote-in {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: none; }
+}
+.lp-quote-card.animating {
+  animation: quote-in 0.38s ease forwards;
+}
+
+/* ── Section label ── */
+.lp-quotes-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 24px;
+}
+
+/* ── Stats bar responsive ── */
+@media (max-width: 800px) {
+  .lp-stats-in {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .lp-stat-val {
+    font-size: 34px;
+  }
+}
+@media (max-width: 480px) {
+  .lp-stats-in {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lp-quote-text {
+    font-size: 16px;
+  }
+}

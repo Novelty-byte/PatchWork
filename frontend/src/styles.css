@@ -44,6 +44,63 @@
   --focus: #5cccb9;
 }
 
+
+/* â”€â”€ Community accent: sky-blue â”€â”€ */
+:root {
+  --blue: #0ea5e9;
+  --blue-bg: #e0f2fe;
+  --blue-ink: #0369a1;
+  --green-glow: 0 0 20px rgba(6, 107, 94, 0.30);
+  --green-glow-lg: 0 0 40px rgba(6, 107, 94, 0.22);
+  --community-grad: linear-gradient(135deg, #066b5e 0%, #0ea5e9 100%);
+}
+:root[data-theme="dark"] {
+  --blue: #38bdf8;
+  --blue-bg: #082f49;
+  --blue-ink: #7dd3fc;
+  --green-glow: 0 0 24px rgba(63, 181, 162, 0.38);
+  --green-glow-lg: 0 0 48px rgba(63, 181, 162, 0.22);
+  --community-grad: linear-gradient(135deg, #3fb5a2 0%, #38bdf8 100%);
+}
+
+/* â”€â”€ Scroll progress bar â”€â”€ */
+.scroll-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--community-grad);
+  z-index: 9999;
+  pointer-events: none;
+  transition: width 0.08s linear;
+  border-radius: 0 2px 2px 0;
+}
+
+/* â”€â”€ Chat typing glow â”€â”€ */
+@keyframes typing-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%       { box-shadow: var(--green-glow); }
+}
+.is-typing-glow {
+  animation: typing-glow 1.4s ease-in-out infinite;
+}
+
+/* â”€â”€ Micro upload burst â”€â”€ */
+@keyframes burst-out {
+  from { transform: translate(var(--dx,0px), var(--dy,0px)) scale(1); opacity: 1; }
+  to   { transform: translate(calc(var(--dx,0px)*4), calc(var(--dy,0px)*4)) scale(0); opacity: 0; }
+}
+.upload-burst-dot {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: burst-out 0.6s ease-out forwards;
+}
+
+/* â”€â”€ Reduced motion: kill canvas + heavy anims â”€â”€ */
+@media (prefers-reduced-motion: reduce) {
+  canvas.bg-canvas { display: none !important; }
+}
 body {
   transition:
     background-color 0.2s,
@@ -68,6 +125,63 @@ body {
 }
 html {
   -webkit-text-size-adjust: 100%;
+}
+
+/* â”€â”€ Community accent: sky-blue â”€â”€ */
+:root {
+  --blue: #0ea5e9;
+  --blue-bg: #e0f2fe;
+  --blue-ink: #0369a1;
+  --green-glow: 0 0 20px rgba(6, 107, 94, 0.30);
+  --green-glow-lg: 0 0 40px rgba(6, 107, 94, 0.22);
+  --community-grad: linear-gradient(135deg, #066b5e 0%, #0ea5e9 100%);
+}
+:root[data-theme="dark"] {
+  --blue: #38bdf8;
+  --blue-bg: #082f49;
+  --blue-ink: #7dd3fc;
+  --green-glow: 0 0 24px rgba(63, 181, 162, 0.38);
+  --green-glow-lg: 0 0 48px rgba(63, 181, 162, 0.22);
+  --community-grad: linear-gradient(135deg, #3fb5a2 0%, #38bdf8 100%);
+}
+
+/* â”€â”€ Scroll progress bar â”€â”€ */
+.scroll-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--community-grad);
+  z-index: 9999;
+  pointer-events: none;
+  transition: width 0.08s linear;
+  border-radius: 0 2px 2px 0;
+}
+
+/* â”€â”€ Chat typing glow â”€â”€ */
+@keyframes typing-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%       { box-shadow: var(--green-glow); }
+}
+.is-typing-glow {
+  animation: typing-glow 1.4s ease-in-out infinite;
+}
+
+/* â”€â”€ Micro upload burst â”€â”€ */
+@keyframes burst-out {
+  from { transform: translate(var(--dx,0px), var(--dy,0px)) scale(1); opacity: 1; }
+  to   { transform: translate(calc(var(--dx,0px)*4), calc(var(--dy,0px)*4)) scale(0); opacity: 0; }
+}
+.upload-burst-dot {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: burst-out 0.6s ease-out forwards;
+}
+
+/* â”€â”€ Reduced motion: kill canvas + heavy anims â”€â”€ */
+@media (prefers-reduced-motion: reduce) {
+  canvas.bg-canvas { display: none !important; }
 }
 body {
   margin: 0;
@@ -1024,7 +1138,64 @@ h1 {
   border-radius: var(--r-sm);
   box-shadow: 0 10px 28px rgba(20, 58, 53, 0.16);
 }
-.toast-body {
+.toast-
+/* â”€â”€ Community accent: sky-blue â”€â”€ */
+:root {
+  --blue: #0ea5e9;
+  --blue-bg: #e0f2fe;
+  --blue-ink: #0369a1;
+  --green-glow: 0 0 20px rgba(6, 107, 94, 0.30);
+  --green-glow-lg: 0 0 40px rgba(6, 107, 94, 0.22);
+  --community-grad: linear-gradient(135deg, #066b5e 0%, #0ea5e9 100%);
+}
+:root[data-theme="dark"] {
+  --blue: #38bdf8;
+  --blue-bg: #082f49;
+  --blue-ink: #7dd3fc;
+  --green-glow: 0 0 24px rgba(63, 181, 162, 0.38);
+  --green-glow-lg: 0 0 48px rgba(63, 181, 162, 0.22);
+  --community-grad: linear-gradient(135deg, #3fb5a2 0%, #38bdf8 100%);
+}
+
+/* â”€â”€ Scroll progress bar â”€â”€ */
+.scroll-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--community-grad);
+  z-index: 9999;
+  pointer-events: none;
+  transition: width 0.08s linear;
+  border-radius: 0 2px 2px 0;
+}
+
+/* â”€â”€ Chat typing glow â”€â”€ */
+@keyframes typing-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%       { box-shadow: var(--green-glow); }
+}
+.is-typing-glow {
+  animation: typing-glow 1.4s ease-in-out infinite;
+}
+
+/* â”€â”€ Micro upload burst â”€â”€ */
+@keyframes burst-out {
+  from { transform: translate(var(--dx,0px), var(--dy,0px)) scale(1); opacity: 1; }
+  to   { transform: translate(calc(var(--dx,0px)*4), calc(var(--dy,0px)*4)) scale(0); opacity: 0; }
+}
+.upload-burst-dot {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: burst-out 0.6s ease-out forwards;
+}
+
+/* â”€â”€ Reduced motion: kill canvas + heavy anims â”€â”€ */
+@media (prefers-reduced-motion: reduce) {
+  canvas.bg-canvas { display: none !important; }
+}
+body {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1547,4 +1718,21 @@ h1 {
   .map-modal-btns button {
     flex: 1;
   }
+}
+
+/* ─────────────────────────────────────────────────────────
+   COMMUNITY ENHANCEMENTS — appended to styles.css
+   ───────────────────────────────────────────────────────── */
+
+/* ── Step tracker progress ── */
+.steps li {
+  transition: color 0.3s ease;
+}
+.steps li.step-active {
+  color: var(--teal);
+}
+.steps li.step-active b,
+.steps li b.step-num-active {
+  color: var(--teal);
+  font-weight: 800;
 }

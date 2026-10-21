@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Camera,
@@ -14,10 +14,12 @@ import {
   CircleCheck,
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle.jsx";
+import BgCanvas from "../components/BgCanvas.jsx";
 import "../landing.css";
 
 const LOGO = "/patchwork-logo.jpeg";
 
+/* ── Scroll reveal ── */
 function useReveal() {
   useEffect(() => {
     const els = document.querySelectorAll(".lp-reveal");
@@ -39,6 +41,170 @@ function useReveal() {
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
   }, []);
+}
+
+/* ── Scroll progress bar ── */
+function useScrollBar() {
+  useEffect(() => {
+    const bar = document.getElementById("lp-scroll-bar");
+    if (!bar) return;
+    function onScroll() {
+      const total =
+        document.documentElement.scrollHeight - window.innerHeight;
+      const pct = total > 0 ? (window.scrollY / total) * 100 : 0;
+      bar.style.width = pct + "%";
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+}
+
+/* ── Count-up hook ── */
+function useCountUp(target, duration = 1600) {
+  const [value, setValue] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || started.current) return;
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (prefersReduced) { setValue(target); return; }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !started.current) {
+          started.current = true;
+          const start = performance.now();
+          function step(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setValue(Math.round(eased * target));
+            if (progress < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [target, duration]);
+
+  return [value, ref];
+}
+
+/* ── Stats items ── */
+const STATS = [
+  { value: 1240, label: "Reports filed",     suffix: "+" },
+  { value: 860,  label: "Neighbors helped",  suffix: "+" },
+  { value: 98,   label: "Issues resolved",   suffix: "%" },
+  { value: 34,   label: "Neighborhoods",     suffix: "" },
+];
+
+function StatItem({ value, label, suffix }) {
+  const [count, ref] = useCountUp(value);
+  return (
+    <div className="lp-stat-item" ref={ref}>
+      <span className="lp-stat-val">
+        {count}
+        <span className="lp-stat-suffix">{suffix}</span>
+      </span>
+      <span className="lp-stat-label">{label}</span>
+    </div>
+  );
+}
+
+/* ── Community quotes ── */
+const QUOTES = [
+  {
+    text: "The streetlight outside my building was fixed in two days. I never expected it to be this easy!",
+    name: "Aisha K.",
+    area: "Block C",
+    initials: "AK",
+  },
+  {
+    text: "I reported a pothole and 12 neighbors confirmed it — the patch team came the very next morning.",
+    name: "Omar F.",
+    area: "Sector 7",
+    initials: "OF",
+  },
+  {
+    text: "Finally, a real way to be heard by our manager. PatchWork actually works.",
+    name: "Priya S.",
+    area: "Tower 2",
+    initials: "PS",
+  },
+  {
+    text: "Used voice call while standing at the broken gate. Done in under a minute. Amazing.",
+    name: "Daud M.",
+    area: "Phase 4",
+    initials: "DM",
+  },
+];
+
+function QuoteCarousel() {
+  const [active, setActive] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const timerRef = useRef(null);
+  const hovered = useRef(false);
+
+  function goTo(idx) {
+    if (idx === active) return;
+    setAnimating(true);
+    setTimeout(() => {
+      setActive(idx);
+      setAnimating(false);
+    }, 120);
+  }
+
+  useEffect(() => {
+    function next() {
+      if (!hovered.current) {
+        goTo((active + 1) % QUOTES.length);
+      }
+    }
+    timerRef.current = setTimeout(next, 5000);
+    return () => clearTimeout(timerRef.current);
+  }, [active]);
+
+  const q = QUOTES[active];
+  const isBlue = active % 2 === 1;
+
+  return (
+    <section className="lp-quotes lp-section">
+      <div className="lp-wrap lp-quotes-wrap">
+        <p className="lp-quotes-label lp-reveal">What the community says</p>
+        <div
+          className={`lp-quote-card lp-reveal is-in${isBlue ? " is-blue" : ""}${animating ? " animating" : ""}`}
+          onMouseEnter={() => (hovered.current = true)}
+          onMouseLeave={() => (hovered.current = false)}
+        >
+          <p className="lp-quote-text">"{q.text}"</p>
+          <div className="lp-quote-author">
+            <div className="lp-quote-avatar">{q.initials}</div>
+            <div>
+              <div className="lp-quote-name">{q.name}</div>
+              <div className="lp-quote-area">{q.area}</div>
+            </div>
+          </div>
+        </div>
+        <div className="lp-quote-dots">
+          {QUOTES.map((_, i) => (
+            <button
+              key={i}
+              className={`lp-quote-dot${i === active ? " is-active" : ""}`}
+              onClick={() => goTo(i)}
+              aria-label={`Quote ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 const STEPS = [
@@ -94,9 +260,13 @@ const FEATURES = [
 
 export default function Landing() {
   useReveal();
+  useScrollBar();
 
   return (
     <div className="lp">
+      {/* ── Scroll progress ── */}
+      <div id="lp-scroll-bar" className="scroll-bar" style={{ width: "0%" }} />
+
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
           <a href="https://patch-work-app.vercel.app" className="lp-brand">
@@ -115,9 +285,12 @@ export default function Landing() {
         </div>
       </header>
 
+      {/* ── Hero ── */}
       <section className="lp-hero">
+        <BgCanvas mode="icons" />
         <div className="lp-blob lp-blob-a" aria-hidden="true" />
         <div className="lp-blob lp-blob-b" aria-hidden="true" />
+        <div className="lp-blob lp-blob-c" aria-hidden="true" />
         <div className="lp-wrap lp-hero-in">
           <p className="lp-eyebrow">Report · Get Noticed · See It Fixed</p>
           <h1 className="lp-h1">
@@ -140,12 +313,23 @@ export default function Landing() {
           <div className="lp-ticket" aria-hidden="true">
             <span className="lp-chip">PW-482915</span>
             <span className="lp-chip lp-chip-amber">Medium</span>
+            <span className="lp-chip lp-chip-blue">👍 +3 neighbors confirmed</span>
             <strong>Broken Streetlight</strong>
             <span className="lp-ticket-sub">Open · waiting for a fix</span>
           </div>
         </div>
       </section>
 
+      {/* ── Community stats bar ── */}
+      <section className="lp-stats">
+        <div className="lp-wrap lp-stats-in">
+          {STATS.map((s) => (
+            <StatItem key={s.label} value={s.value} label={s.label} suffix={s.suffix} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
       <section className="lp-section">
         <div className="lp-wrap">
           <h2 className="lp-h2 lp-reveal">How it works</h2>
@@ -171,6 +355,10 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Community quotes ── */}
+      <QuoteCarousel />
+
+      {/* ── Features ── */}
       <section className="lp-section lp-section-alt">
         <div className="lp-wrap">
           <h2 className="lp-h2 lp-reveal">Built for the community</h2>
@@ -195,6 +383,7 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── CTA ── */}
       <section className="lp-cta lp-reveal">
         <div className="lp-wrap">
           <h2 className="lp-h2">See a problem? Let us patch it.</h2>

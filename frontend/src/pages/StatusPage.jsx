@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Check,
@@ -18,6 +18,8 @@ import {
 import { getReport, upvoteReport } from "../statusApi";
 import "../status.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
+import BgCanvas from "../components/BgCanvas.jsx";
+import Confetti from "../components/Confetti.jsx";
 import { formatLocationWithGps } from "./ManagerPage.jsx";
 
 /* ---------- helpers ---------- */
@@ -37,6 +39,9 @@ const fmtShort = (iso) => {
 export function Layout({ children }) {
   return (
     <div className="st-page">
+      <div className="st-bg-wrap" aria-hidden="true">
+        <BgCanvas mode="aurora" />
+      </div>
       <header className="st-nav">
         <div className="st-nav-inner">
           <a href="https://patch-work-app.vercel.app" className="st-brand">
@@ -77,30 +82,14 @@ function Skeleton() {
           <span className="sk" style={{ width: 64, height: 28 }} />
           <span className="sk sk-soft" style={{ width: 120, height: 10 }} />
         </div>
-        <span
-          className="sk"
-          style={{ width: 210, height: 26, marginTop: 16 }}
-        />
-        <span
-          className="sk sk-soft"
-          style={{ width: "60%", height: 16, marginTop: 14 }}
-        />
-        <span
-          className="sk sk-soft"
-          style={{ width: "40%", height: 14, marginTop: 10 }}
-        />
-        <span
-          className="sk sk-soft"
-          style={{ width: "100%", height: 42, marginTop: 18 }}
-        />
+        <span className="sk" style={{ width: 210, height: 26, marginTop: 16 }} />
+        <span className="sk sk-soft" style={{ width: "60%", height: 16, marginTop: 14 }} />
+        <span className="sk sk-soft" style={{ width: "40%", height: 14, marginTop: 10 }} />
+        <span className="sk sk-soft" style={{ width: "100%", height: 42, marginTop: 18 }} />
         <hr className="st-hr" />
         <div className="sk-row" style={{ gap: 40 }}>
           {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="sk"
-              style={{ width: 24, height: 24, borderRadius: 8 }}
-            />
+            <span key={i} className="sk" style={{ width: 24, height: 24, borderRadius: 8 }} />
           ))}
         </div>
         <div className="st-photos" style={{ marginTop: 20 }}>
@@ -218,11 +207,8 @@ function StatusUpvoteButton({ reportId }) {
       const result = await upvoteReport(reportId);
       setUpvotes(result.upvotes);
       setVoted(result.voted);
-      // Persist voted state across pages
       try {
-        const ids = JSON.parse(
-          localStorage.getItem("pw_voted_reports") || "[]",
-        );
+        const ids = JSON.parse(localStorage.getItem("pw_voted_reports") || "[]");
         const next = result.voted
           ? [...new Set([...ids, reportId])]
           : ids.filter((id) => id !== reportId);
@@ -269,8 +255,37 @@ function StatusUpvoteButton({ reportId }) {
 /* ---------- main report view ---------- */
 function ReportView({ report }) {
   const [copied, setCopied] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiShown = useRef(false);
+
   const solved = String(report.status).toLowerCase() === "solved";
   const photos = Array.isArray(report.media_urls) ? report.media_urls : [];
+
+  /* ── Animate timeline steps in on mount ── */
+  useEffect(() => {
+    const items = document.querySelectorAll(".st-timeline li");
+    if (!items.length) return;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      items.forEach((el) => el.classList.add("tl-in"));
+      return;
+    }
+    items.forEach((el, i) => {
+      setTimeout(() => el.classList.add("tl-in"), i * 220 + 400);
+    });
+  }, []);
+
+  /* ── One-shot confetti on solved ── */
+  useEffect(() => {
+    if (solved && !confettiShown.current) {
+      confettiShown.current = true;
+      const t = setTimeout(() => {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+      }, 700);
+      return () => clearTimeout(t);
+    }
+  }, [solved]);
 
   let solvedNote = "Solved. This report will be removed soon";
   if (solved) {
@@ -287,6 +302,7 @@ function ReportView({ report }) {
           : "Solved. This report is being removed";
     }
   }
+
   const ver =
     report.verification && report.verification.label
       ? verInfo(report.verification)
@@ -310,10 +326,16 @@ function ReportView({ report }) {
     },
   ];
 
+  /* ── Copy with flash effect ── */
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(report.id);
       setCopied(true);
+      const btn = document.querySelector(".st-copy");
+      if (btn) {
+        btn.classList.add("copy-flashed");
+        setTimeout(() => btn.classList.remove("copy-flashed"), 600);
+      }
       setTimeout(() => setCopied(false), 1600);
     } catch {
       /* clipboard blocked */
@@ -322,8 +344,10 @@ function ReportView({ report }) {
 
   return (
     <>
+      {showConfetti && <Confetti duration={2800} />}
+
       <div className="st-head">
-        <span className="st-circle">
+        <span className={`st-circle${solved ? " is-solved-glow" : ""}`}>
           <Check size={30} />
         </span>
         <div className="st-idpill">
@@ -332,7 +356,9 @@ function ReportView({ report }) {
             className="st-copy"
             onClick={copy}
             aria-label="Copy report number"
+            style={{ position: "relative" }}
           >
+            {copied && <span className="st-copy-tooltip">Copied!</span>}
             {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
         </div>
@@ -359,12 +385,7 @@ function ReportView({ report }) {
               href={`https://www.google.com/maps?q=${report.latitude},${report.longitude}`}
               target="_blank"
               rel="noreferrer"
-              style={{
-                marginLeft: 8,
-                fontSize: "12px",
-                color: "var(--teal)",
-                textDecoration: "underline",
-              }}
+              style={{ marginLeft: 8, fontSize: "12px", color: "var(--teal)", textDecoration: "underline" }}
             >
               Open map &nearr;
             </a>
@@ -499,7 +520,6 @@ export default function StatusPage() {
     load();
   }, [load]);
 
-  // While the report is open, quietly check every 30s so "Solved" shows up by itself.
   const stillOpen =
     state.kind === "ok" &&
     String(state.report.status).toLowerCase() !== "solved";
@@ -514,10 +534,7 @@ export default function StatusPage() {
       {state.kind === "loading" && (
         <>
           {state.waiting && (
-            <p
-              className="st-sub"
-              style={{ margin: "0 auto 16px", textAlign: "center" }}
-            >
+            <p className="st-sub" style={{ margin: "0 auto 16px", textAlign: "center" }}>
               Lots of people are using PatchWork right now. Trying again...
             </p>
           )}

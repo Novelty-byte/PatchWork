@@ -13,6 +13,7 @@ import UploadCard from "./components/UploadCard.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import VoicePanel from "./components/VoicePanel.jsx";
 import Toasts from "./components/Toasts.jsx";
+import BgCanvas from "./components/BgCanvas.jsx";
 import { uploadFile, sendChat } from "./api";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 
@@ -21,6 +22,29 @@ const MAX_SIZE = 25 * 1024 * 1024;
 const ALLOWED = ["jpg", "jpeg", "png", "heic", "mp4", "mov"];
 const GREETING =
   "Hello! Welcome to PatchWork. What problem would you like to report today?";
+
+/* ── Upload burst mini confetti ── */
+function spawnBurst(containerEl) {
+  if (!containerEl) return;
+  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReduced) return;
+  const COLORS = ["#066b5e", "#3fb5a2", "#7bd88f", "#0ea5e9", "#38bdf8"];
+  for (let i = 0; i < 8; i++) {
+    const dot = document.createElement("span");
+    dot.className = "upload-burst-dot";
+    const angle = (i / 8) * Math.PI * 2;
+    const dist = 24 + Math.random() * 18;
+    dot.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
+    dot.style.setProperty("--dy", `${Math.sin(angle) * dist}px`);
+    dot.style.background = COLORS[i % COLORS.length];
+    dot.style.left = "50%";
+    dot.style.top = "50%";
+    dot.style.marginLeft = "-4px";
+    dot.style.marginTop = "-4px";
+    containerEl.appendChild(dot);
+    setTimeout(() => dot.remove(), 700);
+  }
+}
 
 export default function App() {
   const navigate = useNavigate();
@@ -34,14 +58,23 @@ export default function App() {
   const [typing, setTyping] = useState(false);
   const [done, setDone] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [activeStep, setActiveStep] = useState(0);
   const idRef = useRef(0);
   const redirectTimer = useRef(null);
+  const uploadZoneRef = useRef(null);
   const nextId = () => ++idRef.current;
 
   useEffect(() => {
     document.title = "PatchWork – Report a neighborhood problem";
     return () => clearTimeout(redirectTimer.current);
   }, []);
+
+  /* ── Update active step as user progresses ── */
+  useEffect(() => {
+    if (done) setActiveStep(2);
+    else if (files.some((f) => f.status === "done")) setActiveStep(1);
+    else setActiveStep(0);
+  }, [files, done]);
 
   const notify = (t) => {
     const id = nextId();
@@ -72,7 +105,11 @@ export default function App() {
       },
     ]);
     uploadFile(file, (p) => patchFile(id, { progress: p }))
-      .then((url) => patchFile(id, { status: "done", progress: 100, url }))
+      .then((url) => {
+        patchFile(id, { status: "done", progress: 100, url });
+        // 🎉 burst on success
+        spawnBurst(uploadZoneRef.current);
+      })
       .catch(() => patchFile(id, { status: "error" }));
   }
 
@@ -154,185 +191,216 @@ export default function App() {
     }
   }
 
+  const STEPS = [
+    { label: "Add photos & GPS", note: "Optional" },
+    { label: "Describe the problem", note: "" },
+    { label: "Get confirmation", note: "" },
+  ];
+
   return (
-    <div className="page">
-      <header className="nav">
-        <div className="container nav-inner">
-          <a className="brand" href="https://patch-work-app.vercel.app">
-            <span className="brand-mark">
-              <img src="/patchwork-logo.jpeg" alt="PatchWork" style={{ width: 24, height: 24, borderRadius: 4, objectFit: "cover", display: "block" }} />
-            </span>
-            PatchWork
-          </a>
-          <div className="nav-right">
-            <Link className="nav-link" to="/dashboard">
-              Dashboard <ArrowUpRight size={14} />
-            </Link>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+    <div className="page" style={{ position: "relative" }}>
+      {/* ── Aurora background ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          overflow: "hidden",
+        }}
+      >
+        <BgCanvas mode="aurora" />
+      </div>
 
-      <main className="container">
-        <section className="hero">
-          <div>
-            <p className="kicker">
-              <i className="dot" /> SMALL REPORTS. BETTER NEIGHBORHOODS.
-            </p>
-            <h1>
-              See a problem?
-              <br />
-              Report it in under a minute.
-            </h1>
-            <p className="lead">
-              Upload photos or video, then describe the issue to our AI
-              assistant by chat or voice call. Your manager is alerted
-              instantly. You get a confirmation email.
-            </p>
-          </div>
-          <aside className="hero-card">
-            <Heart size={26} />
-            <h2>A little care goes a long way.</h2>
-            <p>Help your society manager see what needs attention.</p>
-            <span className="badge-plain">No account needed</span>
-          </aside>
-        </section>
-
-        <ol className="steps">
-          <li>
-            <b>1.</b>
-            <span>
-              Add photos/video & GPS<small>Optional</small>
-            </span>
-          </li>
-          <li>
-            <b>2.</b>
-            <span>Describe the problem</span>
-          </li>
-          <li>
-            <b>3.</b>
-            <span>Get confirmation</span>
-          </li>
-        </ol>
-
-        <div className="main-grid">
-          <UploadCard
-            files={files}
-            errors={uploadErrors}
-            onAdd={addFiles}
-            onRemove={removeFile}
-            onDismissError={(id) =>
-              setUploadErrors((e) => e.filter((x) => x.id !== id))
-            }
-            gpsLocation={gpsLocation}
-            onGpsChange={setGpsLocation}
-            notify={notify}
-          />
-
-          <section className="card" aria-labelledby="assistant-title">
-            <div className="card-head">
-              <span className="step-badge">2</span>
-              <div>
-                <h2 id="assistant-title">Tell our AI assistant</h2>
-                <p className="muted">
-                  A quick conversation. We'll handle the details.
-                </p>
-              </div>
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <header className="nav">
+          <div className="container nav-inner">
+            <a className="brand" href="https://patch-work-app.vercel.app">
+              <span className="brand-mark">
+                <img
+                  src="/patchwork-logo.jpeg"
+                  alt="PatchWork"
+                  style={{ width: 24, height: 24, borderRadius: 4, objectFit: "cover", display: "block" }}
+                />
+              </span>
+              PatchWork
+            </a>
+            <div className="nav-right">
+              <Link className="nav-link" to="/dashboard">
+                Dashboard <ArrowUpRight size={14} />
+              </Link>
+              <ThemeToggle />
             </div>
+          </div>
+        </header>
 
-            <div className="tabs" role="tablist">
-              <button
-                role="tab"
-                aria-selected={tab === "chat"}
-                className={tab === "chat" ? "is-active" : ""}
-                onClick={() => setTab("chat")}
-              >
-                <MessageCircle size={18} /> Chat
-              </button>
-              <button
-                role="tab"
-                aria-selected={tab === "voice"}
-                className={tab === "voice" ? "is-active" : ""}
-                onClick={() => setTab("voice")}
-              >
-                <Phone size={18} /> Voice Call
-              </button>
+        <main className="container">
+          <section className="hero">
+            <div>
+              <p className="kicker">
+                <i className="dot" /> SMALL REPORTS. BETTER NEIGHBORHOODS.
+              </p>
+              <h1>
+                See a problem?
+                <br />
+                Report it in under a minute.
+              </h1>
+              <p className="lead">
+                Upload photos or video, then describe the issue to our AI
+                assistant by chat or voice call. Your manager is alerted
+                instantly. You get a confirmation email.
+              </p>
             </div>
+            <aside className="hero-card">
+              <Heart size={26} />
+              <h2>A little care goes a long way.</h2>
+              <p>Help your society manager see what needs attention.</p>
+              <span className="badge-plain">No account needed</span>
+            </aside>
+          </section>
 
-            <div hidden={tab !== "chat"}>
-              <ChatPanel
-                messages={messages}
-                typing={typing}
-                onSend={handleSend}
-                showChips={false}
-              >
-                {done && (
-                  <div className="st-done">
-                    <CircleCheck size={22} />
-                    <div>
-                      <strong>Report {done.id} recorded</strong>
-                      <span>Taking you to your status page...</span>
-                    </div>
-                    <Link
-                      className="btn btn-primary btn-sm"
-                      to={`/status/${encodeURIComponent(done.id)}`}
-                    >
-                      View status
-                    </Link>
-                  </div>
+          {/* ── Animated step tracker ── */}
+          <ol className="steps">
+            {STEPS.map((s, i) => (
+              <li key={s.label} className={i <= activeStep ? "step-active" : ""}>
+                <b className={i <= activeStep ? "step-num-active" : ""}>{i + 1}.</b>
+                <span>
+                  {s.label}
+                  {s.note && <small>{s.note}</small>}
+                </span>
+                {i <= activeStep && i < activeStep && (
+                  <CircleCheck size={14} style={{ color: "var(--teal)", marginLeft: 6, flexShrink: 0 }} />
                 )}
-              </ChatPanel>
-            </div>
+              </li>
+            ))}
+          </ol>
 
-            <div hidden={tab !== "voice"}>
-              <VoicePanel
-                notify={notify}
-                mediaUrls={mediaUrls}
+          <div className="main-grid">
+            {/* Upload card with burst ref */}
+            <div ref={uploadZoneRef} style={{ position: "relative" }}>
+              <UploadCard
+                files={files}
+                errors={uploadErrors}
+                onAdd={addFiles}
+                onRemove={removeFile}
+                onDismissError={(id) =>
+                  setUploadErrors((e) => e.filter((x) => x.id !== id))
+                }
                 gpsLocation={gpsLocation}
+                onGpsChange={setGpsLocation}
+                notify={notify}
               />
             </div>
-          </section>
-        </div>
-      </main>
 
-      <footer className="footer">
-        <div className="container foot-inner">
-          <p>
-            <ShieldCheck size={18} /> Your report is shared only with your
-            society manager. Your contact details stay private.
-          </p>
-          <div className="foot-row">
-            <span>© 2026 PatchWork</span>
-            <span>
-              <button
-                className="link-btn"
-                onClick={() =>
-                  notify({
-                    variant: "info",
-                    title: "Your privacy",
-                    text: "Your phone and email are only sent to your society manager, never shown publicly.",
-                  })
-                }
-              >
-                Privacy
-              </button>
-              {" · "}
-              <button
-                className="link-btn"
-                onClick={() =>
-                  notify({
-                    variant: "info",
-                    title: "Need help?",
-                    text: "Ask your society manager or the PatchWork team.",
-                  })
-                }
-              >
-                Get help
-              </button>
-            </span>
+            <section
+              className={`card${typing ? " is-typing-glow" : ""}`}
+              aria-labelledby="assistant-title"
+            >
+              <div className="card-head">
+                <span className="step-badge">2</span>
+                <div>
+                  <h2 id="assistant-title">Tell our AI assistant</h2>
+                  <p className="muted">
+                    A quick conversation. We'll handle the details.
+                  </p>
+                </div>
+              </div>
+
+              <div className="tabs" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={tab === "chat"}
+                  className={tab === "chat" ? "is-active" : ""}
+                  onClick={() => setTab("chat")}
+                >
+                  <MessageCircle size={18} /> Chat
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={tab === "voice"}
+                  className={tab === "voice" ? "is-active" : ""}
+                  onClick={() => setTab("voice")}
+                >
+                  <Phone size={18} /> Voice Call
+                </button>
+              </div>
+
+              <div hidden={tab !== "chat"}>
+                <ChatPanel
+                  messages={messages}
+                  typing={typing}
+                  onSend={handleSend}
+                  showChips={false}
+                >
+                  {done && (
+                    <div className="st-done">
+                      <CircleCheck size={22} />
+                      <div>
+                        <strong>Report {done.id} recorded</strong>
+                        <span>Taking you to your status page...</span>
+                      </div>
+                      <Link
+                        className="btn btn-primary btn-sm"
+                        to={`/status/${encodeURIComponent(done.id)}`}
+                      >
+                        View status
+                      </Link>
+                    </div>
+                  )}
+                </ChatPanel>
+              </div>
+
+              <div hidden={tab !== "voice"}>
+                <VoicePanel
+                  notify={notify}
+                  mediaUrls={mediaUrls}
+                  gpsLocation={gpsLocation}
+                />
+              </div>
+            </section>
           </div>
-        </div>
-      </footer>
+        </main>
+
+        <footer className="footer">
+          <div className="container foot-inner">
+            <p>
+              <ShieldCheck size={18} /> Your report is shared only with your
+              society manager. Your contact details stay private.
+            </p>
+            <div className="foot-row">
+              <span>© 2026 PatchWork</span>
+              <span>
+                <button
+                  className="link-btn"
+                  onClick={() =>
+                    notify({
+                      variant: "info",
+                      title: "Your privacy",
+                      text: "Your phone and email are only sent to your society manager, never shown publicly.",
+                    })
+                  }
+                >
+                  Privacy
+                </button>
+                {" · "}
+                <button
+                  className="link-btn"
+                  onClick={() =>
+                    notify({
+                      variant: "info",
+                      title: "Need help?",
+                      text: "Ask your society manager or the PatchWork team.",
+                    })
+                  }
+                >
+                  Get help
+                </button>
+              </span>
+            </div>
+          </div>
+        </footer>
+      </div>
 
       <Toasts
         toasts={toasts}

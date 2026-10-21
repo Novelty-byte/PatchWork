@@ -687,3 +687,97 @@ button.mg-card:hover {
 .overlay.mg-confirm {
   z-index: 2000;
 }
+
+/* ─────────────────────────────────────────────────────────
+   COMMUNITY ENHANCEMENTS — appended to manager.css
+   ───────────────────────────────────────────────────────── */
+
+/* ── Dashboard page: bg canvas wrapper ── */
+.mg-page-wrap {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* ── Live activity ticker ── */
+.mg-ticker {
+  background: var(--mint);
+  border-bottom: 1px solid var(--mint-line);
+  padding: 7px 20px;
+  font-size: 13px;
+  color: var(--teal);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+.mg-ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.mg-ticker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex: none;
+  animation: pulse-dot 2.2s ease-in-out infinite;
+}
+.mg-ticker-dot.is-blue {
+  background: var(--blue);
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+
+/* ── Card entrance animation ── */
+@keyframes card-slide-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+.mg-card-enter {
+  animation: card-slide-up 0.4s ease both;
+}
+
+/* ── Severity badge glow pulse ── */
+@keyframes sev-pulse-high {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 8px rgba(170,70,64,0.55); }
+}
+@keyframes sev-pulse-critical {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 14px rgba(170,70,64,0.75); }
+}
+.sev-anim-high {
+  animation: sev-pulse-high 2.4s ease-in-out infinite;
+}
+.sev-anim-critical {
+  animation: sev-pulse-critical 1.5s ease-in-out infinite;
+}
+
+/* ── Solved button celebration flash ── */
+@keyframes solve-flash {
+  0%   { background: var(--teal); }
+  40%  { background: #22c55e; }
+  100% { background: var(--teal); }
+}
+.btn-solve-flash {
+  animation: solve-flash 0.7s ease forwards;
+}
+
+/* ── Dashboard canvas wrap ── */
+.mg-canvas-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.mg-body {
+  position: relative;
+  z-index: 1;
+}

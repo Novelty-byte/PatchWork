@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronLeft,
@@ -23,6 +23,8 @@ import Toasts from "../components/Toasts.jsx";
 import { CATEGORIES } from "../components/UploadCard.jsx";
 import { fetchReports, markSolved, upvoteReport } from "../managerApi";
 import DashboardMap from "../components/DashboardMap.jsx";
+import BgCanvas from "../components/BgCanvas.jsx";
+import Confetti from "../components/Confetti.jsx";
 import "../status.css";
 import "../manager.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
@@ -104,12 +106,56 @@ function Verification({ r }) {
     </span>
   );
 }
-const SevBadge = ({ r }) =>
-  r.severity ? (
-    <span className={`badge badge-sev-${String(r.severity).toLowerCase()}`}>
+
+const SevBadge = ({ r }) => {
+  const sev = r.severity ? String(r.severity).toLowerCase() : null;
+  const animClass =
+    sev === "critical"
+      ? " sev-anim-critical"
+      : sev === "high"
+        ? " sev-anim-high"
+        : "";
+  return r.severity ? (
+    <span className={`badge badge-sev-${sev}${animClass}`}>
       {cap(String(r.severity))}
     </span>
   ) : null;
+};
+
+/* ---------- live ticker ---------- */
+function ActivityTicker({ reports }) {
+  const now = Date.now();
+  const oneHourAgo = now - HOUR;
+  const oneDayAgo = now - 24 * HOUR;
+  const recentNew = reports.filter(
+    (r) => !isSolved(r) && new Date(r.created_at).getTime() > oneHourAgo,
+  ).length;
+  const resolvedToday = reports.filter(
+    (r) => isSolved(r) && new Date(r.solved_at || r.created_at).getTime() > oneDayAgo,
+  ).length;
+  const totalOpen = reports.filter((r) => !isSolved(r)).length;
+
+  return (
+    <div className="mg-ticker" aria-live="polite">
+      <div className="mg-ticker-item">
+        <span className="mg-ticker-dot" />
+        {totalOpen} open report{totalOpen !== 1 ? "s" : ""} in the community
+      </div>
+      {recentNew > 0 && (
+        <div className="mg-ticker-item">
+          <span className="mg-ticker-dot" />
+          {recentNew} new in the last hour
+        </div>
+      )}
+      {resolvedToday > 0 && (
+        <div className="mg-ticker-item">
+          <span className="mg-ticker-dot is-blue" />
+          {resolvedToday} resolved today
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ---------- upvote button ---------- */
 function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
@@ -130,11 +176,7 @@ function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
       onClick={handle}
       disabled={loading}
       aria-label={voted ? "Remove your confirmation" : "Confirm this issue"}
-      title={
-        voted
-          ? "Click to remove your vote"
-          : "Confirm this issue affects you too"
-      }
+      title={voted ? "Click to remove your vote" : "Confirm this issue affects you too"}
     >
       <ThumbsUp size={13} />
       <span>{upvotes > 0 ? upvotes : ""}</span>
@@ -146,14 +188,15 @@ function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
 }
 
 /* ---------- report card ---------- */
-function ReportCard({ r, voted, onOpen, onUpvote }) {
+function ReportCard({ r, voted, onOpen, onUpvote, animDelay = 0 }) {
   const st = statusLine(r);
   const thumb = r.media_urls && r.media_urls[0];
   const upvotes = r.upvotes || 0;
   const isHighPriority = upvotes >= 3;
   return (
     <button
-      className={`mg-card${isHighPriority ? " mg-card-priority" : ""}`}
+      className={`mg-card mg-card-enter${isHighPriority ? " mg-card-priority" : ""}`}
+      style={{ animationDelay: `${animDelay}ms` }}
       onClick={onOpen}
     >
       <div className="mg-thumb">
@@ -305,12 +348,7 @@ function DetailPanel({ r, voted, onClose, onAskSolve, onUpvote }) {
                   target="_blank"
                   rel="noreferrer"
                   className="tiny"
-                  style={{
-                    display: "inline-block",
-                    marginTop: "4px",
-                    color: "var(--teal)",
-                    textDecoration: "underline",
-                  }}
+                  style={{ display: "inline-block", marginTop: "4px", color: "var(--teal)", textDecoration: "underline" }}
                 >
                   View on map &nearr;
                 </a>
@@ -331,7 +369,6 @@ function DetailPanel({ r, voted, onClose, onAskSolve, onUpvote }) {
             <p>{ver.reason || "The AI has not checked this report."}</p>
           </div>
 
-          {/* Community upvote in detail panel */}
           <div className="mg-upvote-panel">
             <span className="eyebrow">COMMUNITY CONFIRMATION</span>
             <div className="mg-upvote-row">
@@ -343,8 +380,7 @@ function DetailPanel({ r, voted, onClose, onAskSolve, onUpvote }) {
               />
               {upvotes > 0 && (
                 <span className="mg-neighbors">
-                  {upvotes} neighbor{upvotes === 1 ? "" : "s"} confirmed this
-                  issue
+                  {upvotes} neighbor{upvotes === 1 ? "" : "s"} confirmed this issue
                 </span>
               )}
             </div>
@@ -375,12 +411,12 @@ export default function ManagerPage() {
   const [cat, setCat] = useState("all");
   const [sev, setSev] = useState("all");
   const [sort, setSort] = useState("newest");
-  const [viewMode, setViewMode] = useState("cards"); // "cards" | "map"
+  const [viewMode, setViewMode] = useState("cards");
   const [selected, setSelected] = useState(null);
   const [confirm, setConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toasts, setToasts] = useState([]);
-  // Track which reports the current device has voted on (keyed by report id)
+  const [showSolveConfetti, setShowSolveConfetti] = useState(false);
   const [votedIds, setVotedIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("pw_voted_reports") || "[]");
@@ -455,6 +491,9 @@ export default function ManagerPage() {
             : r,
         ),
       }));
+      // 🎉 Confetti on solve!
+      setShowSolveConfetti(true);
+      setTimeout(() => setShowSolveConfetti(false), 3000);
       notify({
         variant: "success",
         title: "Marked as solved",
@@ -475,14 +514,12 @@ export default function ManagerPage() {
   async function handleUpvote(reportId) {
     try {
       const result = await upvoteReport(reportId);
-      // Update upvote count in local state
       setState((s) => ({
         ...s,
         reports: s.reports.map((r) =>
           r.id === reportId ? { ...r, upvotes: result.upvotes } : r,
         ),
       }));
-      // Toggle voted state
       setVotedIds((prev) => {
         const next = result.voted
           ? [...new Set([...prev, reportId])]
@@ -509,210 +546,196 @@ export default function ManagerPage() {
   }
 
   return (
-    <div className="st-page">
-      <header className="st-nav">
-        <div className="mg-bar">
-          <a href="https://patch-work-app.vercel.app" className="st-brand">
-            <span className="st-mark">
-              <img src="/patchwork-logo.jpeg" alt="PatchWork" style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover", display: "block" }} />
-            </span>
-            PatchWork
-          </a>
-          <div className="mg-bar-right">
-            <span className="badge badge-teal mg-count">{openCount} open</span>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => load()}
-              aria-label="Refresh"
-            >
-              <RefreshCw size={16} /> <span className="desk-only">Refresh</span>
-            </button>
-            <a className="btn btn-primary btn-sm" href="https://patch-work-app.vercel.app/report">
-              <Plus size={16} />{" "}
-              <span className="desk-only">Report a problem</span>
+    <div className="st-page" style={{ position: "relative" }}>
+      {/* Dot-network background canvas */}
+      <div className="mg-canvas-wrap" aria-hidden="true">
+        <BgCanvas mode="dots" />
+      </div>
+
+      {showSolveConfetti && <Confetti duration={2800} />}
+
+      <div className="mg-body">
+        <header className="st-nav">
+          <div className="mg-bar">
+            <a href="https://patch-work-app.vercel.app" className="st-brand">
+              <span className="st-mark">
+                <img src="/patchwork-logo.jpeg" alt="PatchWork" style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover", display: "block" }} />
+              </span>
+              PatchWork
             </a>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
-      <main className="mg-main">
-        <div className="mg-top">
-          <h1>Live community dashboard</h1>
-          <p className="st-sub">
-            Open reports stay here until they are solved. Solved reports
-            disappear 12 hours later.
-          </p>
-        </div>
-
-        <div className="mg-filters">
-          <div className="mg-tabs" role="tablist">
-            <button
-              role="tab"
-              aria-selected={tab === "open"}
-              className={tab === "open" ? "is-active" : ""}
-              onClick={() => setTab("open")}
-            >
-              Open
-            </button>
-            <button
-              role="tab"
-              aria-selected={tab === "solved"}
-              className={tab === "solved" ? "is-active" : ""}
-              onClick={() => setTab("solved")}
-            >
-              Solved
-            </button>
-          </div>
-          <select
-            className="mg-select"
-            value={cat}
-            onChange={(e) => setCat(e.target.value)}
-            aria-label="Category"
-          >
-            <option value="all">All categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          {hasSeverity && (
-            <select
-              className="mg-select"
-              value={sev}
-              onChange={(e) => setSev(e.target.value)}
-              aria-label="Severity"
-            >
-              <option value="all">All severities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          )}
-          <select
-            className="mg-select"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            aria-label="Sort"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
-          {/* Cards / Map toggle */}
-          <div className="mg-view-toggle" role="group" aria-label="View mode">
-            <button
-              className={`mg-view-btn${viewMode === "cards" ? " is-active" : ""}`}
-              onClick={() => setViewMode("cards")}
-              aria-pressed={viewMode === "cards"}
-            >
-              <LayoutGrid size={15} /> Cards
-            </button>
-            <button
-              className={`mg-view-btn${viewMode === "map" ? " is-active" : ""}`}
-              onClick={() => setViewMode("map")}
-              aria-pressed={viewMode === "map"}
-            >
-              <Map size={15} /> Map
-            </button>
-          </div>
-        </div>
-
-        {state.kind === "loading" && (
-          <div className="mg-grid" aria-busy="true">
-            {[0, 1, 2, 3, 4, 5].map((n) => (
-              <div key={n} className="mg-card mg-skel">
-                <span className="sk sk-soft mg-thumb" />
-                <div className="mg-card-body">
-                  <span className="sk" style={{ width: "70%", height: 20 }} />
-                  <span
-                    className="sk sk-soft"
-                    style={{ width: "50%", height: 14 }}
-                  />
-                  <span
-                    className="sk sk-soft"
-                    style={{ width: "60%", height: 14 }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {state.kind === "error" && (
-          <div className="st-center">
-            <span className="st-circle is-clay">
-              <TriangleAlert size={28} />
-            </span>
-            <h2 className="mg-h2">We couldn&apos;t load the reports</h2>
-            <p className="st-sub">
-              We&apos;re having trouble connecting right now. Please try again
-              in a moment.
-            </p>
-            <button
-              className="btn btn-primary st-narrow"
-              onClick={() => load()}
-            >
-              <RefreshCw size={18} /> Retry
-            </button>
-          </div>
-        )}
-
-        {state.kind === "ok" && visible.length === 0 && (
-          <div className="st-center">
-            <span className="st-circle">
-              <Inbox size={28} />
-            </span>
-            <h2 className="mg-h2">
-              {filtered
-                ? "No reports match these filters"
-                : tab === "open"
-                  ? "No open reports. Great!"
-                  : "No solved reports yet"}
-            </h2>
-            <p className="st-sub">
-              {filtered
-                ? "Try a different category or severity."
-                : tab === "open"
-                  ? "New reports from residents will appear here."
-                  : "Reports marked as solved show here for 12 hours."}
-            </p>
-            {filtered && (
+            <div className="mg-bar-right">
+              <span className="badge badge-teal mg-count">{openCount} open</span>
               <button
-                className="btn btn-secondary st-narrow"
-                onClick={() => {
-                  setCat("all");
-                  setSev("all");
-                }}
+                className="btn btn-secondary btn-sm"
+                onClick={() => load()}
+                aria-label="Refresh"
               >
-                Clear filters
+                <RefreshCw size={16} /> <span className="desk-only">Refresh</span>
               </button>
+              <a className="btn btn-primary btn-sm" href="https://patch-work-app.vercel.app/report">
+                <Plus size={16} />{" "}
+                <span className="desk-only">Report a problem</span>
+              </a>
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+
+        {/* Live activity ticker */}
+        {state.kind === "ok" && state.reports.length > 0 && (
+          <ActivityTicker reports={state.reports} />
+        )}
+
+        <main className="mg-main">
+          <div className="mg-top">
+            <h1>Live community dashboard</h1>
+            <p className="st-sub">
+              Open reports stay here until they are solved. Solved reports
+              disappear 12 hours later.
+            </p>
+          </div>
+
+          <div className="mg-filters">
+            <div className="mg-tabs" role="tablist">
+              <button
+                role="tab"
+                aria-selected={tab === "open"}
+                className={tab === "open" ? "is-active" : ""}
+                onClick={() => setTab("open")}
+              >
+                Open
+              </button>
+              <button
+                role="tab"
+                aria-selected={tab === "solved"}
+                className={tab === "solved" ? "is-active" : ""}
+                onClick={() => setTab("solved")}
+              >
+                Solved
+              </button>
+            </div>
+            <select className="mg-select" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category">
+              <option value="all">All categories</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            {hasSeverity && (
+              <select className="mg-select" value={sev} onChange={(e) => setSev(e.target.value)} aria-label="Severity">
+                <option value="all">All severities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
             )}
+            <select className="mg-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+            {/* Cards / Map toggle */}
+            <div className="mg-view-toggle" role="group" aria-label="View mode">
+              <button
+                className={`mg-view-btn${viewMode === "cards" ? " is-active" : ""}`}
+                onClick={() => setViewMode("cards")}
+                aria-pressed={viewMode === "cards"}
+              >
+                <LayoutGrid size={15} /> Cards
+              </button>
+              <button
+                className={`mg-view-btn${viewMode === "map" ? " is-active" : ""}`}
+                onClick={() => setViewMode("map")}
+                aria-pressed={viewMode === "map"}
+              >
+                <Map size={15} /> Map
+              </button>
+            </div>
           </div>
-        )}
 
-        {state.kind === "ok" && visible.length > 0 && viewMode === "cards" && (
-          <div className="mg-grid">
-            {visible.map((r) => (
-              <ReportCard
-                key={r.id}
-                r={r}
-                voted={votedIds.includes(r.id)}
-                onOpen={() => setSelected(r.id)}
-                onUpvote={handleUpvote}
-              />
-            ))}
-          </div>
-        )}
+          {state.kind === "loading" && (
+            <div className="mg-grid" aria-busy="true">
+              {[0, 1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="mg-card mg-skel">
+                  <span className="sk sk-soft mg-thumb" />
+                  <div className="mg-card-body">
+                    <span className="sk" style={{ width: "70%", height: 20 }} />
+                    <span className="sk sk-soft" style={{ width: "50%", height: 14 }} />
+                    <span className="sk sk-soft" style={{ width: "60%", height: 14 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {state.kind === "ok" && viewMode === "map" && (
-          <DashboardMap
-            reports={state.reports}
-            onOpenReport={(id) => setSelected(id)}
-          />
-        )}
-      </main>
+          {state.kind === "error" && (
+            <div className="st-center">
+              <span className="st-circle is-clay">
+                <TriangleAlert size={28} />
+              </span>
+              <h2 className="mg-h2">We couldn&apos;t load the reports</h2>
+              <p className="st-sub">
+                We&apos;re having trouble connecting right now. Please try again
+                in a moment.
+              </p>
+              <button className="btn btn-primary st-narrow" onClick={() => load()}>
+                <RefreshCw size={18} /> Retry
+              </button>
+            </div>
+          )}
+
+          {state.kind === "ok" && visible.length === 0 && (
+            <div className="st-center">
+              <span className="st-circle">
+                <Inbox size={28} />
+              </span>
+              <h2 className="mg-h2">
+                {filtered
+                  ? "No reports match these filters"
+                  : tab === "open"
+                    ? "No open reports. Great!"
+                    : "No solved reports yet"}
+              </h2>
+              <p className="st-sub">
+                {filtered
+                  ? "Try a different category or severity."
+                  : tab === "open"
+                    ? "New reports from residents will appear here."
+                    : "Reports marked as solved show here for 12 hours."}
+              </p>
+              {filtered && (
+                <button
+                  className="btn btn-secondary st-narrow"
+                  onClick={() => { setCat("all"); setSev("all"); }}
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+
+          {state.kind === "ok" && visible.length > 0 && viewMode === "cards" && (
+            <div className="mg-grid">
+              {visible.map((r, idx) => (
+                <ReportCard
+                  key={r.id}
+                  r={r}
+                  voted={votedIds.includes(r.id)}
+                  onOpen={() => setSelected(r.id)}
+                  onUpvote={handleUpvote}
+                  animDelay={Math.min(idx, 8) * 60}
+                />
+              ))}
+            </div>
+          )}
+
+          {state.kind === "ok" && viewMode === "map" && (
+            <DashboardMap
+              reports={state.reports}
+              onOpenReport={(id) => setSelected(id)}
+            />
+          )}
+        </main>
+      </div>
 
       {selectedReport && (
         <DetailPanel
@@ -732,11 +755,7 @@ export default function ManagerPage() {
           aria-labelledby="solve-title"
         >
           <div className="modal">
-            <h2
-              id="solve-title"
-              className="modal-title"
-              style={{ fontSize: 24 }}
-            >
+            <h2 id="solve-title" className="modal-title" style={{ fontSize: 24 }}>
               Mark as solved?
             </h2>
             <p className="muted">
