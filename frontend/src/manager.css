@@ -700,39 +700,50 @@ button.mg-card:hover {
 
 /* ── Live activity ticker ── */
 .mg-ticker {
-  background: var(--mint);
-  border-bottom: 1px solid var(--mint-line);
-  padding: 7px 20px;
+  background: linear-gradient(90deg, var(--mint) 0%, var(--blue-bg) 100%);
+  border-bottom: 2px solid var(--mint-line);
+  padding: 10px 20px;
   font-size: 13px;
   color: var(--teal);
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
   overflow: hidden;
   position: relative;
   z-index: 2;
+  box-shadow: inset 0 -1px 8px rgba(6, 107, 94, 0.08);
 }
 .mg-ticker-item {
   display: flex;
   align-items: center;
   gap: 7px;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
+  transition: transform 0.3s ease;
+}
+.mg-ticker-item:hover {
+  transform: scale(1.05);
 }
 .mg-ticker-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #22c55e;
   flex: none;
   animation: pulse-dot 2.2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
 }
 .mg-ticker-dot.is-blue {
   background: var(--blue);
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.5);
 }
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.7); }
+  50%       { opacity: 0.7; transform: scale(0.85); box-shadow: 0 0 12px currentColor; }
 }
 
 /* ── Card entrance animation ── */

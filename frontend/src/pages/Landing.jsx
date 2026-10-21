@@ -441,8 +441,13 @@ export default function Landing() {
       </section>
 
       <footer className="lp-footer">
-        <div className="lp-wrap">
-          © 2026 PatchWork · Report · Get Noticed · See It Fixed
+        <div className="lp-wrap lp-footer-content">
+          <img 
+            src="/PatchWork_Community_Logo.webp" 
+            alt="PatchWork Community" 
+            className="lp-footer-logo lp-reveal"
+          />
+          <p className="lp-footer-text">© 2026 PatchWork · Report · Get Noticed · See It Fixed</p>
         </div>
       </footer>
     </div>

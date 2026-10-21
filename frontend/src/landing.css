@@ -279,11 +279,32 @@
   margin-bottom: 28px;
 }
 .lp-footer {
-  padding: 24px 0;
+  padding: 48px 0 32px;
   text-align: center;
   color: var(--muted);
   font-size: 14px;
   border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.lp-footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.lp-footer-logo {
+  max-width: 180px;
+  height: auto;
+  opacity: 0.9;
+  transition: opacity 0.3s, transform 0.3s;
+  border-radius: 12px;
+}
+.lp-footer-logo:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.lp-footer-text {
+  margin: 0;
 }
 
 /* scroll animation */

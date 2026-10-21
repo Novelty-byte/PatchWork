@@ -26,6 +26,17 @@
   --surface-2: #f6f6f1;
   --on-teal: #fff;
   --focus: rgba(6, 107, 94, 0.45);
+  
+  /* Themed colors */
+  --orange: #f97316;
+  --orange-bg: #ffedd5;
+  --orange-ink: #9a3412;
+  --yellow: #eab308;
+  --yellow-bg: #fef9c3;
+  --yellow-ink: #713f12;
+  --gray: #6b7280;
+  --gray-bg: #f3f4f6;
+  --gray-ink: #374151;
 }
 
 :root[data-theme="dark"] {
@@ -54,6 +65,17 @@
   --surface-2: #1b3033;
   --on-teal: #04211d;
   --focus: #5cccb9;
+  
+  /* Themed colors dark */
+  --orange: #fb923c;
+  --orange-bg: #431407;
+  --orange-ink: #fdba74;
+  --yellow: #fbbf24;
+  --yellow-bg: #422006;
+  --yellow-ink: #fde047;
+  --gray: #9ca3af;
+  --gray-bg: #1f2937;
+  --gray-ink: #d1d5db;
 }
 
 /* ── Scroll progress bar ── */
@@ -341,6 +363,12 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(6, 107, 94, 0.15);
+  border-color: var(--teal);
 }
 .card-head {
   display: flex;
@@ -1499,13 +1527,115 @@ h1 {
 
 /* ── Step tracker progress ── */
 .steps li {
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease;
 }
 .steps li.step-active {
   color: var(--teal);
+  transform: scale(1.05);
 }
 .steps li.step-active b,
 .steps li b.step-num-active {
   color: var(--teal);
   font-weight: 800;
+}
+
+/* ── Button pulse animation ── */
+@keyframes btn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(6, 107, 94, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(6, 107, 94, 0); }
+}
+.btn-primary:not(:disabled):active {
+  animation: btn-pulse 0.6s ease-out;
+}
+
+/* ── Floating animation for hero elements ── */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.hero-card {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+/* ── Shimmer loading effect ── */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+.sk {
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* ── Themed button variants ── */
+.btn-orange {
+  background: var(--orange);
+  color: #fff;
+  border-color: var(--orange);
+}
+.btn-orange:hover:not(:disabled) {
+  background: var(--orange-ink);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+.btn-yellow {
+  background: var(--yellow);
+  color: var(--yellow-ink);
+  border-color: var(--yellow);
+}
+.btn-yellow:hover:not(:disabled) {
+  background: var(--yellow-ink);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);
+}
+
+/* ── Icon tile color variants ── */
+.icon-tile-blue {
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+.icon-tile-orange {
+  background: var(--orange-bg);
+  color: var(--orange-ink);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+.icon-tile-yellow {
+  background: var(--yellow-bg);
+  color: var(--yellow-ink);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+/* ── Page-specific background accents ── */
+.page-accent-dots::before {
+  content: '';
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--blue) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.03;
+  top: 10%;
+  right: 5%;
+  pointer-events: none;
+  z-index: 0;
+}
+.page-accent-rings::after {
+  content: '';
+  position: fixed;
+  width: 400px;
+  height: 400px;
+  border: 2px dashed var(--mint-line);
+  border-radius: 50%;
+  opacity: 0.3;
+  bottom: -100px;
+  left: -100px;
+  pointer-events: none;
+  z-index: 0;
+  animation: rotate-slow 60s linear infinite;
+}
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
