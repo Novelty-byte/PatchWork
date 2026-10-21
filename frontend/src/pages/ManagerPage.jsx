@@ -527,10 +527,10 @@ export default function ManagerPage() {
             >
               <RefreshCw size={16} /> <span className="desk-only">Refresh</span>
             </button>
-            <Link className="btn btn-primary btn-sm" to="/">
+            <a className="btn btn-primary btn-sm" href="https://patch-work-app.vercel.app/report">
               <Plus size={16} />{" "}
               <span className="desk-only">Report a problem</span>
-            </Link>
+            </a>
             <ThemeToggle />
           </div>
         </div>
