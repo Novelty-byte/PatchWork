@@ -16,6 +16,7 @@ import {
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import BgCanvas from "../components/BgCanvas.jsx";
 import { fetchReports } from "../managerApi";
+import useSpotlight from "../hooks/useSpotlight.js";
 import "../landing.css";
 
 const LOGO = "/patchwork-logo.jpeg";
@@ -268,6 +269,26 @@ export default function Landing() {
   useReveal();
   useScrollBar();
   const [stats, setStats] = useState(STATS);
+  const spotlight = useSpotlight();
+
+  /* ── Ticket tilt on cursor (skipped on touch / reduced motion) ── */
+  function handleTilt(e) {
+    const el = e.currentTarget;
+    if (window.matchMedia("(hover: none)").matches) return;
+    if (
+      window
+        .matchMedia("(prefers-reduced-motion: reduce)")
+        .matches
+    )
+      return;
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height;
+    el.style.transform = `rotateY(${px * 12}deg) rotateX(${-(py * 12)}deg)`;
+  }
+  function resetTilt(e) {
+    e.currentTarget.style.transform = "";
+  }
 
   useEffect(() => {
     let unmounted = false;
@@ -307,6 +328,9 @@ export default function Landing() {
       {/* ── Scroll progress ── */}
       <div id="lp-scroll-bar" className="scroll-bar" style={{ width: "0%" }} />
 
+      {/* ── Floating neighborhood icons across the whole page ── */}
+      <BgCanvas mode="icons-page" fixed />
+
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
           <a href="https://patch-work-app.vercel.app" className="lp-brand">
@@ -327,7 +351,7 @@ export default function Landing() {
 
       {/* ── Hero ── */}
       <section className="lp-hero">
-        <BgCanvas mode="icons" />
+        <BgCanvas mode="scene" />
         <div className="lp-blob lp-blob-a" aria-hidden="true" />
         <div className="lp-blob lp-blob-b" aria-hidden="true" />
         <div className="lp-blob lp-blob-c" aria-hidden="true" />
@@ -343,19 +367,26 @@ export default function Landing() {
             or damaged property in under a minute. Just talk to our AI. No
             forms, no account.
           </p>
-          <Link to="/report" className="lp-btn lp-btn-lg">
+          <Link to="/report" className="lp-btn lp-btn-lg shine-sweep">
             Report a problem <ArrowRight size={20} />
           </Link>
           <p className="lp-note">
             Free · No account needed · Works on your phone
           </p>
 
-          <div className="lp-ticket" aria-hidden="true">
-            <span className="lp-chip">PW-482915</span>
-            <span className="lp-chip lp-chip-amber">Medium</span>
-            <span className="lp-chip lp-chip-blue">👍 +3 neighbors confirmed</span>
-            <strong>Broken Streetlight</strong>
-            <span className="lp-ticket-sub">Open · waiting for a fix</span>
+          <div className="lp2-tilt-wrap">
+            <div
+              className="lp-ticket border-flow"
+              aria-hidden="true"
+              onMouseMove={handleTilt}
+              onMouseLeave={resetTilt}
+            >
+              <span className="lp-chip">PW-482915</span>
+              <span className="lp-chip lp-chip-amber">Medium</span>
+              <span className="lp-chip lp-chip-blue">👍 +3 neighbors confirmed</span>
+              <strong>Broken Streetlight</strong>
+              <span className="lp-ticket-sub">Open · waiting for a fix</span>
+            </div>
           </div>
         </div>
       </section>
@@ -379,11 +410,12 @@ export default function Landing() {
           <div className="lp-grid lp-grid-3">
             {STEPS.map((s, i) => (
               <div
-                className="lp-card lp-reveal"
+                className="lp-card lp-reveal lp2-step-glow spotlight"
                 style={{ transitionDelay: `${i * 100}ms` }}
+                onMouseMove={spotlight}
                 key={s.title}
               >
-                <span className="lp-num">{i + 1}</span>
+                <span className="lp-num lp2-card">{i + 1}</span>
                 <span className="lp-icon">
                   <s.icon size={24} />
                 </span>
@@ -408,8 +440,9 @@ export default function Landing() {
           <div className="lp-grid lp-grid-3">
             {FEATURES.map((f, i) => (
               <div
-                className="lp-card lp-reveal"
+                className="lp-card lp-reveal spotlight"
                 style={{ transitionDelay: `${(i % 3) * 100}ms` }}
+                onMouseMove={spotlight}
                 key={f.title}
               >
                 <span className="lp-icon">

@@ -28,6 +28,7 @@ import Confetti from "../components/Confetti.jsx";
 import "../status.css";
 import "../manager.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
+import useSpotlight from "../hooks/useSpotlight.js";
 
 import {
   HOUR,
@@ -133,16 +134,29 @@ function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
 }
 
 /* ---------- report card ---------- */
+const CAT_SLUGS = {
+  "Broken Streetlight": "streetlight",
+  "Pothole": "pothole",
+  "Sewage": "sewage",
+  "Flooding": "flooding",
+  "Damaged Park": "damaged-park",
+  "Damaged Building": "damaged-building",
+  "Other": "other",
+};
+
 function ReportCard({ r, voted, onOpen, onUpvote, animDelay = 0 }) {
+  const spotlight = useSpotlight();
   const st = statusLine(r);
   const thumb = r.media_urls && r.media_urls[0];
   const upvotes = r.upvotes || 0;
   const isHighPriority = upvotes >= 3;
+  const catClass = `mg2-cat mg2-cat-${CAT_SLUGS[r.category] || "other"}`;
   return (
     <button
-      className={`mg-card mg-card-enter${isHighPriority ? " mg-card-priority" : ""}`}
+      className={`mg-card mg-card-enter ${catClass} spotlight${isHighPriority ? " mg-card-priority" : ""}`}
       style={{ animationDelay: `${animDelay}ms` }}
       onClick={onOpen}
+      onMouseMove={spotlight}
     >
       <div className="mg-thumb">
         {thumb && !isVideo(thumb) ? (
@@ -509,7 +523,7 @@ export default function ManagerPage() {
               PatchWork
             </a>
             <div className="mg-bar-right">
-              <span className="badge badge-teal mg-count">{openCount} open</span>
+              <span className="badge badge-teal mg-count mg2-count-grad grad-text">{openCount} open</span>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => load()}
@@ -578,8 +592,12 @@ export default function ManagerPage() {
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
             </select>
-            {/* Cards / Map toggle */}
-            <div className="mg-view-toggle" role="group" aria-label="View mode">
+            {/* Cards / Map toggle with sliding pill */}
+            <div
+              className={`mg2-view-toggle${viewMode === "map" ? " is-map" : ""}`}
+              role="group"
+              aria-label="View mode"
+            >
               <button
                 className={`mg-view-btn${viewMode === "cards" ? " is-active" : ""}`}
                 onClick={() => setViewMode("cards")}

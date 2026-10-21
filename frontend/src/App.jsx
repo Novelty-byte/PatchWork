@@ -277,7 +277,7 @@ export default function App() {
           </section>
 
           {/* ── Animated step tracker ── */}
-          <ol className="steps">
+          <ol className="steps rp2-steps">
             {STEPS.map((s, i) => (
               <li key={s.label} className={i <= activeStep ? "step-active" : ""}>
                 <b className={i <= activeStep ? "step-num-active" : ""}>{i + 1}.</b>
@@ -285,16 +285,26 @@ export default function App() {
                   {s.label}
                   {s.note && <small>{s.note}</small>}
                 </span>
-                {i <= activeStep && i < activeStep && (
-                  <CircleCheck size={14} style={{ color: "var(--teal)", marginLeft: 6, flexShrink: 0 }} />
+                {i < activeStep && (
+                  <span
+                    key={`chk-${activeStep}`}
+                    className="pop-in"
+                    style={{ color: "var(--teal)", marginLeft: 6, flexShrink: 0, display: "inline-flex" }}
+                  >
+                    <CircleCheck size={14} />
+                  </span>
                 )}
               </li>
             ))}
           </ol>
 
           <div className="main-grid">
-            {/* Upload card with burst ref */}
-            <div ref={uploadZoneRef} style={{ position: "relative" }}>
+            {/* Upload card with burst ref + gradient hairline */}
+            <div
+              ref={uploadZoneRef}
+              className="rp2-upload-hairline"
+              style={{ position: "relative", borderRadius: 20 }}
+            >
               <UploadCard
                 files={files}
                 errors={uploadErrors}
@@ -352,7 +362,20 @@ export default function App() {
                 >
                   {done && (
                     <div className="st-done">
-                      <CircleCheck size={22} />
+                      <svg
+                        className="rp2-check-draw"
+                        width="26"
+                        height="26"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
                       <div>
                         <strong>Report {done.id} recorded</strong>
                         <span>Taking you to your status page...</span>

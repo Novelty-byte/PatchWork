@@ -549,3 +549,62 @@
     font-size: 16px;
   }
 }
+
+/* ─────────────────────────────────────────────────────────
+   LAYER 2 — Landing (lp2)
+   ───────────────────────────────────────────────────────── */
+
+/* hero ticket: animated gradient border + tilt */
+.lp-ticket {
+  transition: transform 0.2s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.lp2-tilt-wrap {
+  perspective: 700px;
+}
+
+/* feature / step cards: gradient chip + spotlight */
+.lp2-card .lp-num {
+  background: linear-gradient(135deg, var(--teal), var(--blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lp2-step-glow .lp-icon {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.lp2-step-glow:hover .lp-icon {
+  box-shadow: var(--green-glow);
+  transform: scale(1.06);
+}
+.lp-card.spotlight {
+  border-radius: 20px;
+}
+
+/* footer CTA shine */
+.lp-cta .lp-btn.shine-sweep {
+  will-change: transform;
+}
+
+/* reduced motion: no tilt */
+@media (prefers-reduced-motion: reduce), (hover: none) {
+  .lp-ticket {
+    transform: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   LAYER 2.5 — restored floating icons layer (lp2)
+   ───────────────────────────────────────────────────────── */
+/* BgCanvas mode="icons-page" is a fixed full-viewport canvas at z-index 1.
+   Section backgrounds stay static (they paint below it), while content
+   wrappers get z-index 2 so cards/text always sit above the drifting
+   icons — same layering the old hero-only icons had. */
+.lp-section > .lp-wrap,
+.lp-cta > .lp-wrap,
+.lp-stats > .lp-wrap,
+.lp-footer > .lp-wrap {
+  position: relative;
+  z-index: 2;
+}

@@ -644,3 +644,75 @@ a.btn {
   position: relative;
   z-index: 1;
 }
+
+/* ─────────────────────────────────────────────────────────
+   LAYER 2 — Status page (st2)
+   ───────────────────────────────────────────────────────── */
+
+/* timeline connector draw-in */
+.st-timeline li:not(:last-child)::after {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.5s ease;
+}
+.st-timeline li.tl-in:not(:last-child)::after {
+  transform: scaleX(1);
+}
+.st-timeline li:nth-child(2)::after { transition-delay: 200ms; }
+.st-timeline li:nth-child(3)::after { transition-delay: 400ms; }
+
+/* milestone dots: category-colored glow ring */
+.st-timeline li.is-done .st-node {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+
+/* status badge: animated gradient ring */
+.st2-badge-flow {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--amber-bg), var(--amber-bg)) padding-box,
+    linear-gradient(120deg, var(--amber), var(--coral), var(--amber)) border-box;
+  background-size: 100% 100%, 300% 300%;
+  animation: border-flow 5s linear infinite;
+}
+.st-badge.is-solved.st2-badge-flow {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--mint), var(--mint)) padding-box,
+    linear-gradient(120deg, var(--teal), var(--blue), var(--lime), var(--teal)) border-box;
+  background-size: 100% 100%, 300% 300%;
+  animation: border-flow 5s linear infinite;
+}
+
+/* photo gallery hover zoom + glow */
+.st-photos a {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.st-photos a:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 18px rgba(6, 107, 94, 0.25);
+  z-index: 1;
+}
+.st-photos img {
+  transition: transform 0.4s ease;
+}
+.st-photos a:hover img {
+  transform: scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-timeline li::after,
+  .st-timeline li.tl-in::after {
+    transform: none;
+    transition: none;
+  }
+  .st2-badge-flow,
+  .st-badge.is-solved.st2-badge-flow {
+    animation: none !important;
+  }
+  .st-photos a,
+  .st-photos img {
+    transition: none !important;
+    transform: none !important;
+  }
+}

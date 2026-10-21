@@ -344,7 +344,7 @@ function ReportView({ report }) {
 
       <section className="st-card">
         <div className="st-card-top">
-          <span className={`st-badge ${solved ? "is-solved" : "is-open"}`}>
+          <span className={`st-badge st2-badge-flow ${solved ? "is-solved" : "is-open"}`}>
             <i /> {solved ? "Solved" : "Open"}
           </span>
           <span className="st-tag">NEIGHBORHOOD REPORT</span>
