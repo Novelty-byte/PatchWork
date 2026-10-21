@@ -419,7 +419,6 @@ button.mg-card:hover {
   }
 }
 
-
 /* ===== Upvote feature ===== */
 .mg-card-foot {
   display: flex;
@@ -440,7 +439,10 @@ button.mg-card:hover {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
   white-space: nowrap;
 }
 .mg-upvote-btn:hover:not(:disabled) {
@@ -520,7 +522,6 @@ button.mg-card:hover {
   font-weight: 500;
 }
 
-
 /* ===== Map view ===== */
 .mg-view-toggle {
   display: flex;
@@ -540,7 +541,9 @@ button.mg-card:hover {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .mg-view-btn:hover {
   background: var(--hover);
@@ -583,7 +586,7 @@ button.mg-card:hover {
   border-radius: 12px;
   padding: 0;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 .map-popup-wrap .leaflet-popup-content {
   margin: 0;
@@ -662,7 +665,7 @@ button.mg-card:hover {
   transform-origin: center;
   cursor: pointer;
   pointer-events: all;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s;
   translate: -50% -50%;
 }
@@ -672,6 +675,15 @@ button.mg-card:hover {
 }
 
 @media (max-width: 640px) {
-  .mg-map-wrap { height: 380px; }
-  .mg-view-btn { padding: 6px 8px; font-size: 12px; }
+  .mg-map-wrap {
+    height: 380px;
+  }
+  .mg-view-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
+
+.overlay.mg-confirm {
+  z-index: 2000;
 }
