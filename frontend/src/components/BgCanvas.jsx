@@ -60,19 +60,19 @@ export default function BgCanvas({ mode = "aurora" }) {
       ];
 
       const icons = [];
-      const COUNT = 14;
+      const COUNT = 16;
 
       function makeIcon() {
         return {
           x: Math.random() * W,
           y: Math.random() * H,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3,
-          size: 18 + Math.random() * 14,
-          alpha: 0.04 + Math.random() * 0.06,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          size: 32 + Math.random() * 24,
+          alpha: 0.12 + Math.random() * 0.15,
           path: ICON_PATHS[Math.floor(Math.random() * ICON_PATHS.length)],
           rot: Math.random() * Math.PI * 2,
-          rotV: (Math.random() - 0.5) * 0.003,
+          rotV: (Math.random() - 0.5) * 0.004,
         };
       }
       for (let i = 0; i < COUNT; i++) icons.push(makeIcon());
@@ -125,7 +125,7 @@ export default function BgCanvas({ mode = "aurora" }) {
         t += 1;
 
         for (const b of bands) {
-          const alpha = dark ? 0.055 : 0.07;
+          const alpha = dark ? 0.15 : 0.12;
           const yCenter = H * b.yBase + Math.sin(t * b.freq + b.phase) * H * b.amp;
 
           const grad = ctx.createLinearGradient(0, yCenter - 120, 0, yCenter + 120);
@@ -206,12 +206,12 @@ export default function BgCanvas({ mode = "aurora" }) {
             const dy = nodes[i].y - nodes[j].y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < CONNECT_DIST) {
-              const alpha = (1 - dist / CONNECT_DIST) * (dark ? 0.12 : 0.09);
+              const alpha = (1 - dist / CONNECT_DIST) * (dark ? 0.22 : 0.16);
               ctx.beginPath();
               ctx.moveTo(nodes[i].x, nodes[i].y);
               ctx.lineTo(nodes[j].x, nodes[j].y);
               ctx.strokeStyle = `rgba(${tealRgb},${alpha})`;
-              ctx.lineWidth = 1;
+              ctx.lineWidth = 1.5;
               ctx.stroke();
             }
           }
@@ -220,10 +220,10 @@ export default function BgCanvas({ mode = "aurora" }) {
         // draw nodes
         for (const n of nodes) {
           const pulse = 0.5 + 0.5 * Math.sin(pulseT + n.pulseOffset);
-          const alpha = (dark ? 0.18 : 0.13) * (0.6 + 0.4 * pulse);
+          const alpha = (dark ? 0.35 : 0.25) * (0.6 + 0.4 * pulse);
           const useBlue = n.pulseOffset > Math.PI;
           ctx.beginPath();
-          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.arc(n.x, n.y, n.r * 1.3, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(${useBlue ? blueRgb : tealRgb},${alpha})`;
           ctx.fill();
         }

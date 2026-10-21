@@ -177,14 +177,18 @@
 .lp-chip {
   background: var(--mint);
   color: var(--teal);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
+  border: 1.5px solid var(--mint-line);
+  box-shadow: 0 2px 8px rgba(6, 107, 94, 0.15);
 }
 .lp-chip-amber {
   background: var(--amber-bg);
   color: var(--amber-ink);
+  border: 1.5px solid rgba(242, 188, 87, 0.3);
+  box-shadow: 0 2px 8px rgba(242, 188, 87, 0.15);
 }
 .lp-ticket-sub {
   color: var(--muted);
@@ -358,10 +362,12 @@
 .lp-chip-blue {
   background: var(--blue-bg);
   color: var(--blue-ink);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
+  border: 1.5px solid rgba(14, 165, 233, 0.3);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
 }
 
 /* ── Ticket enhanced glow ── */
@@ -372,36 +378,38 @@
 /* ────────────── STATS BAR ────────────── */
 .lp-stats {
   background: var(--community-grad);
-  padding: 40px 0;
+  padding: 48px 0;
+  box-shadow: inset 0 2px 24px rgba(0, 0, 0, 0.1);
 }
 .lp-stats-in {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 20px;
   text-align: center;
 }
 .lp-stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .lp-stat-val {
-  font-size: 42px;
-  font-weight: 800;
+  font-size: 48px;
+  font-weight: 900;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 .lp-stat-label {
-  font-size: 13px;
-  font-weight: 500;
-  opacity: 0.85;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.95;
 }
 .lp-stat-suffix {
   display: inline;
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 32px;
+  font-weight: 900;
 }
 
 /* ────────────── QUOTE CAROUSEL ────────────── */
@@ -415,18 +423,19 @@
 .lp-quote-card {
   position: relative;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--teal);
+  border: 2px solid var(--line);
+  border-left: 5px solid var(--teal);
   border-radius: 18px;
   padding: 28px 28px 24px;
   max-width: 640px;
   margin: 0 auto;
   min-height: 130px;
   transition: border-color 0.4s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(6, 107, 94, 0.08);
 }
 .lp-quote-card.is-blue {
   border-left-color: var(--blue);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(14, 165, 233, 0.08);
 }
 .lp-quote-text {
   font-size: 18px;

@@ -1,9 +1,9 @@
 :root {
   --blue: #0ea5e9;
-  --blue-bg: #e0f2fe;
+  --blue-bg: #d0ebfc;
   --blue-ink: #0369a1;
-  --green-glow: 0 0 20px rgba(6, 107, 94, 0.30);
-  --green-glow-lg: 0 0 40px rgba(6, 107, 94, 0.22);
+  --green-glow: 0 0 28px rgba(6, 107, 94, 0.45);
+  --green-glow-lg: 0 0 52px rgba(6, 107, 94, 0.35);
   --community-grad: linear-gradient(135deg, #066b5e 0%, #0ea5e9 100%);
   --teal: #066b5e;
   --teal-700: #054f46;
@@ -12,8 +12,8 @@
   --bg: #f6f6f1;
   --surface: #fff;
   --line: #e2e6e0;
-  --mint: #eaf3ee;
-  --mint-line: #d3e5dc;
+  --mint: #d8ede3;
+  --mint-line: #c5dfd0;
   --amber: #f2bc57;
   --amber-bg: #fff1cf;
   --amber-ink: #7a5200;
@@ -30,10 +30,10 @@
 
 :root[data-theme="dark"] {
   --blue: #38bdf8;
-  --blue-bg: #082f49;
+  --blue-bg: #0c3e5c;
   --blue-ink: #7dd3fc;
-  --green-glow: 0 0 24px rgba(63, 181, 162, 0.38);
-  --green-glow-lg: 0 0 48px rgba(63, 181, 162, 0.22);
+  --green-glow: 0 0 32px rgba(63, 181, 162, 0.55);
+  --green-glow-lg: 0 0 60px rgba(63, 181, 162, 0.40);
   --community-grad: linear-gradient(135deg, #3fb5a2 0%, #38bdf8 100%);
   --teal: #3fb5a2;
   --teal-700: #5cccb9;
@@ -42,8 +42,8 @@
   --bg: #0e1a17;
   --surface: #15262a;
   --line: #26403a;
-  --mint: #1a2f2a;
-  --mint-line: #26403a;
+  --mint: #1f3d36;
+  --mint-line: #2d5248;
   --amber: #f2bc57;
   --amber-bg: #3a2f14;
   --amber-ink: #f2bc57;
@@ -71,7 +71,7 @@
 /* ── Chat typing glow ── */
 @keyframes typing-glow {
   0%, 100% { box-shadow: 0 0 0 0 transparent; }
-  50%       { box-shadow: var(--green-glow); }
+  50%       { box-shadow: var(--green-glow-lg); }
 }
 .is-typing-glow {
   animation: typing-glow 1.4s ease-in-out infinite;
@@ -361,8 +361,10 @@ h1 {
   color: var(--teal);
   display: grid;
   place-items: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
+  border: 1px solid var(--mint-line);
+  box-shadow: 0 2px 6px rgba(6, 107, 94, 0.12);
 }
 .icon-tile {
   width: 44px;
@@ -372,6 +374,8 @@ h1 {
   color: var(--teal);
   display: inline-grid;
   place-items: center;
+  border: 1px solid var(--mint-line);
+  box-shadow: 0 2px 8px rgba(6, 107, 94, 0.12);
 }
 .icon-tile.sm {
   width: 32px;
@@ -822,26 +826,34 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 5px 13px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  border: 1px solid transparent;
 }
 .badge-teal {
   background: var(--mint);
   color: var(--teal);
+  border-color: var(--mint-line);
 }
 .badge-sev-low {
-  background: var(--mint-line);
+  background: var(--mint);
   color: var(--teal);
+  border-color: var(--mint-line);
+  font-weight: 700;
 }
 .badge-sev-medium {
   background: var(--amber-bg);
   color: var(--amber-ink);
+  border-color: rgba(242, 188, 87, 0.3);
+  font-weight: 700;
 }
 .badge-sev-high {
   background: var(--clay-bg);
   color: var(--clay);
+  border-color: rgba(170, 70, 64, 0.3);
+  font-weight: 700;
 }
 
 .submit-block {
