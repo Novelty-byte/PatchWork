@@ -60,7 +60,8 @@ function endOf(r) {
   return null;
 }
 function statusLine(r) {
-  if (!isSolved(r)) return { text: "Open \u00B7 waiting for a fix", tone: "normal" };
+  if (!isSolved(r))
+    return { text: "Open \u00B7 waiting for a fix", tone: "normal" };
   const end = endOf(r);
   if (!end) return { text: "Solved", tone: "solved" };
   const h = Math.max(0, Math.ceil((end - Date.now()) / HOUR));
@@ -129,11 +130,17 @@ function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
       onClick={handle}
       disabled={loading}
       aria-label={voted ? "Remove your confirmation" : "Confirm this issue"}
-      title={voted ? "Click to remove your vote" : "Confirm this issue affects you too"}
+      title={
+        voted
+          ? "Click to remove your vote"
+          : "Confirm this issue affects you too"
+      }
     >
       <ThumbsUp size={13} />
       <span>{upvotes > 0 ? upvotes : ""}</span>
-      <span className="mg-upvote-label">{voted ? "Confirmed" : "+1 Confirm"}</span>
+      <span className="mg-upvote-label">
+        {voted ? "Confirmed" : "+1 Confirm"}
+      </span>
     </button>
   );
 }
@@ -145,7 +152,10 @@ function ReportCard({ r, voted, onOpen, onUpvote }) {
   const upvotes = r.upvotes || 0;
   const isHighPriority = upvotes >= 3;
   return (
-    <button className={`mg-card${isHighPriority ? " mg-card-priority" : ""}`} onClick={onOpen}>
+    <button
+      className={`mg-card${isHighPriority ? " mg-card-priority" : ""}`}
+      onClick={onOpen}
+    >
       <div className="mg-thumb">
         {thumb && !isVideo(thumb) ? (
           <img
@@ -175,8 +185,8 @@ function ReportCard({ r, voted, onOpen, onUpvote }) {
           <MapPin size={15} /> {formatLocationWithGps(r)}
         </p>
         <p className="mg-meta">
-          <User size={15} /> {r.reporter_name || "Anonymous resident"}{" "}
-          &middot; {ago(r.created_at)}
+          <User size={15} /> {r.reporter_name || "Anonymous resident"} &middot;{" "}
+          {ago(r.created_at)}
         </p>
         <p className={`mg-exp is-${st.tone}`}>
           <Clock size={15} /> {st.text}
@@ -295,7 +305,12 @@ function DetailPanel({ r, voted, onClose, onAskSolve, onUpvote }) {
                   target="_blank"
                   rel="noreferrer"
                   className="tiny"
-                  style={{ display: "inline-block", marginTop: "4px", color: "var(--teal)", textDecoration: "underline" }}
+                  style={{
+                    display: "inline-block",
+                    marginTop: "4px",
+                    color: "var(--teal)",
+                    textDecoration: "underline",
+                  }}
                 >
                   View on map &nearr;
                 </a>
@@ -328,7 +343,8 @@ function DetailPanel({ r, voted, onClose, onAskSolve, onUpvote }) {
               />
               {upvotes > 0 && (
                 <span className="mg-neighbors">
-                  {upvotes} neighbor{upvotes === 1 ? "" : "s"} confirmed this issue
+                  {upvotes} neighbor{upvotes === 1 ? "" : "s"} confirmed this
+                  issue
                 </span>
               )}
             </div>
@@ -471,7 +487,9 @@ export default function ManagerPage() {
         const next = result.voted
           ? [...new Set([...prev, reportId])]
           : prev.filter((id) => id !== reportId);
-        try { localStorage.setItem("pw_voted_reports", JSON.stringify(next)); } catch {}
+        try {
+          localStorage.setItem("pw_voted_reports", JSON.stringify(next));
+        } catch {}
         return next;
       });
       notify({
@@ -482,7 +500,11 @@ export default function ManagerPage() {
           : "Your confirmation has been removed.",
       });
     } catch {
-      notify({ variant: "error", title: "Couldn't register vote", text: "Please try again." });
+      notify({
+        variant: "error",
+        title: "Couldn't register vote",
+        text: "Please try again.",
+      });
     }
   }
 
@@ -490,7 +512,7 @@ export default function ManagerPage() {
     <div className="st-page">
       <header className="st-nav">
         <div className="mg-bar">
-          <Link to="/" className="st-brand">
+          <Link to="/report" className="st-brand">
             <span className="st-mark">
               <LayoutGrid size={18} />
             </span>
@@ -625,8 +647,8 @@ export default function ManagerPage() {
             </span>
             <h2 className="mg-h2">We couldn&apos;t load the reports</h2>
             <p className="st-sub">
-              We&apos;re having trouble connecting right now. Please try again in a
-              moment.
+              We&apos;re having trouble connecting right now. Please try again
+              in a moment.
             </p>
             <button
               className="btn btn-primary st-narrow"

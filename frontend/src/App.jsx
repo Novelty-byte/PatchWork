@@ -158,7 +158,7 @@ export default function App() {
     <div className="page">
       <header className="nav">
         <div className="container nav-inner">
-          <Link className="brand" to="/">
+          <Link className="brand" to="/report">
             <span className="brand-mark">
               <Sprout size={20} />
             </span>

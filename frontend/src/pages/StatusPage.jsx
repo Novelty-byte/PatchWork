@@ -39,7 +39,7 @@ export function Layout({ children }) {
     <div className="st-page">
       <header className="st-nav">
         <div className="st-nav-inner">
-          <Link to="/" className="st-brand">
+          <Link to="/report" className="st-brand">
             <span className="st-mark">
               <LayoutGrid size={18} />
             </span>
@@ -151,7 +151,8 @@ function ErrorView({ onRetry }) {
       <p className="st-eyebrow is-clay">TEMPORARILY UNAVAILABLE</p>
       <h1>We couldn&apos;t load your report</h1>
       <p className="st-sub">
-        We&apos;re having trouble connecting right now. Please try again in a moment.
+        We&apos;re having trouble connecting right now. Please try again in a
+        moment.
       </p>
       <div className="st-alert" role="alert">
         <Info size={18} />
@@ -203,7 +204,9 @@ function StatusUpvoteButton({ reportId }) {
     try {
       const ids = JSON.parse(localStorage.getItem("pw_voted_reports") || "[]");
       return ids.includes(reportId);
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -217,15 +220,19 @@ function StatusUpvoteButton({ reportId }) {
       setVoted(result.voted);
       // Persist voted state across pages
       try {
-        const ids = JSON.parse(localStorage.getItem("pw_voted_reports") || "[]");
+        const ids = JSON.parse(
+          localStorage.getItem("pw_voted_reports") || "[]",
+        );
         const next = result.voted
           ? [...new Set([...ids, reportId])]
           : ids.filter((id) => id !== reportId);
         localStorage.setItem("pw_voted_reports", JSON.stringify(next));
       } catch {}
-      setMsg(result.voted
-        ? `${result.upvotes} neighbor${result.upvotes === 1 ? "" : "s"} confirmed this issue.`
-        : "Your confirmation has been removed.");
+      setMsg(
+        result.voted
+          ? `${result.upvotes} neighbor${result.upvotes === 1 ? "" : "s"} confirmed this issue.`
+          : "Your confirmation has been removed.",
+      );
       setTimeout(() => setMsg(null), 3000);
     } catch {
       setMsg("Could not register vote. Please try again.");
@@ -241,7 +248,11 @@ function StatusUpvoteButton({ reportId }) {
         className={`mg-upvote-btn st-upvote${voted ? " is-voted" : ""}`}
         onClick={handle}
         disabled={loading}
-        aria-label={voted ? "Remove your confirmation" : "Confirm this issue affects you too"}
+        aria-label={
+          voted
+            ? "Remove your confirmation"
+            : "Confirm this issue affects you too"
+        }
       >
         <ThumbsUp size={15} />
         {upvotes > 0 && <span className="mg-upvote-count">{upvotes}</span>}
@@ -348,7 +359,12 @@ function ReportView({ report }) {
               href={`https://www.google.com/maps?q=${report.latitude},${report.longitude}`}
               target="_blank"
               rel="noreferrer"
-              style={{ marginLeft: 8, fontSize: "12px", color: "var(--teal)", textDecoration: "underline" }}
+              style={{
+                marginLeft: 8,
+                fontSize: "12px",
+                color: "var(--teal)",
+                textDecoration: "underline",
+              }}
             >
               Open map &nearr;
             </a>
