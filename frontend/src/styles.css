@@ -751,6 +751,44 @@ h1 {
 .bubble-bot .bubble-label {
   color: var(--teal);
 }
+/* Synaptic shimmer while Patch is typing (layer 3, additive) */
+.rp3-synaptic {
+  position: relative;
+  overflow: hidden;
+}
+.rp3-synaptic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    color-mix(in srgb, var(--teal) 22%, transparent) 50%,
+    transparent 62%
+  );
+  background-size: 220% 100%;
+  animation: synaptic-shimmer 1.4s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.icon-tile.rp3-synaptic {
+  animation: rp3-synapse-glow 1.2s ease-in-out infinite;
+}
+@keyframes rp3-synapse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 45%, transparent); }
+  50%      { box-shadow: 0 0 14px 3px color-mix(in srgb, var(--teal) 60%, transparent); }
+}
+.icon-tile.rp3-synaptic {
+  animation-name: rp3-synapse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp3-synaptic::after,
+  .icon-tile.rp3-synaptic {
+    animation: none !important;
+    display: none;
+  }
+  .icon-tile.rp3-synaptic { display: grid; }
+}
 .bubble-user {
   background: var(--teal);
   color: var(--on-teal);
@@ -1834,5 +1872,549 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .steps.rp2-steps {
     animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYER 3 — VFX, Dynamic Imagery, Elements & Themes (additive)
+   All new classes prefixed vfx- / rp3- / mg3- / theme- — zero
+   collisions with layers 1 & 2. Honors prefers-reduced-motion.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Theme 2: Solar-Punk / Botanical Green ── */
+:root[data-theme="solar-punk"] {
+  color-scheme: light;
+  --teal: #047857;
+  --teal-700: #036450;
+  --ink: #1b2c23;
+  --muted: #63705f;
+  --bg: #fcfbf7;
+  --surface: #fffdf4;
+  --line: #dfe3d2;
+  --mint: #e9f4dc;
+  --mint-line: #cfe3b8;
+  --amber: #eab308;
+  --amber-bg: #fdf3c9;
+  --amber-ink: #7a5200;
+  --clay: #c2410c;
+  --clay-bg: #fee9dd;
+  --surface-2: #f5f7e8;
+  --on-teal: #f7fee7;
+  --focus: #059669;
+  --blue: #65a30d;
+  --blue-bg: #ecfccb;
+  --blue-ink: #3f6212;
+  --community-grad: linear-gradient(135deg, #047857 0%, #eab308 100%);
+  --green-glow: 0 0 28px rgba(132, 204, 22, 0.45);
+  --green-glow-lg: 0 0 52px rgba(132, 204, 22, 0.35);
+}
+
+/* ── Theme 3: Cyberpunk Operations / Night Ops ── */
+:root[data-theme="cyberpunk"] {
+  color-scheme: dark;
+  --teal: #00f0ff;
+  --teal-700: #67e8f9;
+  --ink: #d8f3f6;
+  --muted: #7c93a6;
+  --bg: #070d12;
+  --surface: #0c141c;
+  --line: #1c2b3a;
+  --mint: #0d2230;
+  --mint-line: #16405a;
+  --amber: #ffb703;
+  --amber-bg: #2d2105;
+  --amber-ink: #ffb703;
+  --clay: #ff4d6d;
+  --clay-bg: #3a0d1a;
+  --disabled-bg: #14202c;
+  --disabled-ink: #4d6070;
+  --surface-2: #101b26;
+  --on-teal: #02222a;
+  --focus: #00f0ff;
+  --blue: #a855f7;
+  --blue-bg: #251d43;
+  --blue-ink: #c4b5fd;
+  --violet: #a855f7;
+  --community-grad: linear-gradient(135deg, #00f0ff 0%, #a855f7 100%);
+  --green-glow: 0 0 28px rgba(0, 240, 255, 0.4);
+  --green-glow-lg: 0 0 52px rgba(0, 240, 255, 0.3);
+}
+
+/* ── Theme 4: Nordic Glass ── */
+:root[data-theme="nordic"] {
+  color-scheme: dark;
+  --teal: #38bdf8;
+  --teal-700: #7dd3fc;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --bg: #1e293b;
+  --surface: rgba(255, 255, 255, 0.08);
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --line: rgba(148, 163, 184, 0.25);
+  --mint: rgba(56, 189, 248, 0.12);
+  --mint-line: rgba(56, 189, 248, 0.35);
+  --amber: #fbbf24;
+  --amber-bg: #3b2f14;
+  --amber-ink: #fcd34d;
+  --clay: #f87171;
+  --clay-bg: #3d1518;
+  --disabled-bg: rgba(148, 163, 184, 0.15);
+  --disabled-ink: #64748b;
+  --on-teal: #082f49;
+  --focus: #38bdf8;
+  --blue: #7dd3fc;
+  --blue-bg: #164e63;
+  --blue-ink: #bae6fd;
+  --community-grad: linear-gradient(135deg, #38bdf8 0%, #a5f3fc 100%);
+  --green-glow: 0 0 28px rgba(56, 189, 248, 0.45);
+  --green-glow-lg: 0 0 52px rgba(56, 189, 248, 0.35);
+}
+
+/* Frosted glass card utility (Nordic-style, works everywhere) */
+.vfx-glass-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+:root[data-theme="dark"] .vfx-glass-card,
+:root[data-theme="cyberpunk"] .vfx-glass-card,
+:root[data-theme="nordic"] .vfx-glass-card {
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--teal) 22%, transparent);
+}
+
+/* ── VFX keyframes ── */
+@keyframes laser-sweep {
+  0%   { transform: translateX(-140%) skewX(-20deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(340%) skewX(-20deg); opacity: 0; }
+}
+@keyframes radar-sweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes audio-bar-pulse {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.6; }
+  50%      { transform: scaleY(1); opacity: 1; }
+}
+@keyframes neon-breathing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.0), 0 0 0 1px rgba(220, 38, 38, 0.35); }
+  50%      { box-shadow: 0 0 22px 4px rgba(220, 38, 38, 0.45), 0 0 0 1px rgba(220, 38, 38, 0.6); }
+}
+@keyframes hologram-stamp {
+  0%   { transform: scale(1.7) rotate(-7deg); opacity: 0; filter: blur(5px); }
+  55%  { transform: scale(0.94) rotate(-2deg); opacity: 1; filter: blur(0); }
+  75%  { transform: scale(1.04) rotate(-3deg); }
+  100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+}
+@keyframes stamp-glow-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(6, 107, 94, 0.5); }
+  100% { box-shadow: 0 0 0 22px rgba(6, 107, 94, 0); }
+}
+@keyframes synaptic-shimmer {
+  0%   { background-position: -160% 0; }
+  100% { background-position: 260% 0; }
+}
+@keyframes magnetic-glow {
+  0%, 100% { box-shadow: 0 0 12px -2px var(--teal), inset 0 0 14px -8px var(--teal); }
+  50%      { box-shadow: 0 0 26px 0 var(--teal), inset 0 0 20px -6px var(--teal); }
+}
+@keyframes sonar-ripple {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+}
+@keyframes fire-flicker {
+  0%, 100% { filter: brightness(1) saturate(1); transform: scale(1); }
+  50%      { filter: brightness(1.25) saturate(1.3); transform: scale(1.08); }
+}
+@keyframes heat-shimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* VFX utilities */
+.vfx-laser-scan {
+  position: relative;
+  overflow: hidden;
+}
+.vfx-laser-scan::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 181, 162, 0.55), rgba(255, 255, 255, 0.65), rgba(59, 181, 162, 0.35), transparent);
+  animation: laser-sweep 1.1s ease-in-out 1;
+  pointer-events: none;
+}
+.vfx-hazard-pulse {
+  animation: vfx-hazard-border 2s ease-in-out infinite;
+}
+@keyframes vfx-hazard-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.0), 0 0 14px -4px rgba(220, 38, 38, 0.55); }
+  50%      { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.35), 0 0 28px -2px rgba(220, 38, 38, 0.6); }
+}
+.vfx-dropzone-armed.dropzone {
+  animation: magnetic-glow 1.4s ease-in-out infinite;
+  border-color: var(--teal);
+}
+
+/* Reduced motion: shut every layer-3 animation off, keep static end states */
+@media (prefers-reduced-motion: reduce) {
+  .vfx-laser-scan::after,
+  .vfx-hazard-pulse,
+  .vfx-dropzone-armed.dropzone,
+  .rp3-tilt,
+  .mg3-tilt-card {
+    animation: none !important;
+    transform: none !important;
+  }
+  .vfx-laser-scan::after { display: none; }
+  .rp3-stamp-badge { animation: none !important; transform: rotate(-3deg) !important; opacity: 1 !important; }
+  .rp3-impact-pill { animation: none !important; }
+  .mg3-flame { animation: none !important; }
+  .mg3-sonar::after { animation: none !important; }
+  .mg3-sparkline-line { stroke-dashoffset: 0 !important; }
+  .mg3-donut-seg { transition: none !important; }
+  .mg3-map-ring { animation: none !important; }
+}
+
+/* ── Report page (rp3) ── */
+
+/* Community impact live pill under hero */
+.rp3-impact-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--mint-line);
+  box-shadow: 0 8px 24px -12px rgba(6, 107, 94, 0.4);
+  animation: rp3-pill-float 5s ease-in-out infinite;
+}
+:root[data-theme="dark"] .rp3-impact-pill,
+:root[data-theme="cyberpunk"] .rp3-impact-pill,
+:root[data-theme="nordic"] .rp3-impact-pill {
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+}
+@keyframes rp3-pill-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* Category quick-picker carousel above chat input */
+.rp3-quickpick {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: thin;
+}
+.rp3-qp-card {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 74px;
+  padding: 8px 8px 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.rp3-qp-card:hover {
+  border-color: var(--teal);
+  box-shadow: 0 6px 14px -8px var(--teal);
+  transform: translateY(-2px);
+}
+.rp3-qp-card svg {
+  width: 26px;
+  height: 26px;
+}
+.rp3-qp-card .rp3-qp-ill {
+  display: grid;
+  place-items: center;
+}
+
+/* Smart-inspection metadata chips on files */
+.rp3-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+.rp3-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--teal);
+  border: 1px solid var(--mint-line);
+  white-space: nowrap;
+}
+
+/* Typing: synaptic glow bubble + shimmer on Patch avatar */
+.bubble-bot.rp3-synaptic {
+  position: relative;
+  overflow: hidden;
+}
+.bubble-bot.rp3-synaptic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in srgb, var(--teal) 22%, transparent) 45%,
+    color-mix(in srgb, #fff, transparent 20%) 50%,
+    color-mix(in srgb, var(--teal) 18%, transparent) 60%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: synaptic-shimmer 1.5s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.icon-tile.rp3-synaptic {
+  position: relative;
+  animation: rp3-synapse-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rp3-synapse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 45%, transparent); }
+  50%      { box-shadow: 0 0 14px 3px color-mix(in srgb, var(--teal) 55%, transparent); }
+}
+
+/* Digital boarding-pass ticket */
+.rp3-ticket {
+  position: relative;
+  border: 1.5px solid var(--teal);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 88% 30%, color-mix(in srgb, var(--teal) 10%, transparent) 0 60px, transparent 90px),
+    var(--surface);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+.rp3-ticket::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 64px;
+  bottom: 0;
+  border-left: 1.5px dashed var(--mint-line);
+  pointer-events: none;
+}
+.rp3-ticket-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-right: 76px;
+}
+.rp3-ticket-watermark {
+  position: absolute;
+  right: 74px;
+  bottom: 6px;
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: color-mix(in srgb, var(--teal) 8%, transparent);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+.rp3-ticket-id {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--teal);
+}
+.rp3-ticket-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  padding-right: 64px;
+}
+.rp3-ticket-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.rp3-ticket-gps {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--teal);
+  width: fit-content;
+}
+.rp3-ticket-qr {
+  position: absolute;
+  right: 10px;
+  top: 12px;
+  width: 46px;
+  height: 46px;
+  flex: none;
+}
+.rp3-stamp-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 2px solid var(--teal);
+  border-radius: 8px;
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+  opacity: 0;
+  animation:
+    hologram-stamp 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.4) 0.25s forwards,
+    stamp-glow-ring 1.2s ease-out 0.9s 1;
+}
+
+/* Smart-inspection metadata chips */
+.rp3-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.rp3-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1.5px 8px;
+  border-radius: 999px;
+  background: var(--mint);
+  border: 1px solid var(--mint-line);
+  color: var(--teal);
+}
+
+/* Voice: procedural wave canvas */
+.rp3-wave-canvas {
+  width: 100%;
+  height: 74px;
+  display: block;
+}
+/* Reduced-motion: hide canvas, show static bars instead */
+.wave.rm-fallback { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rp3-wave-canvas { display: none; }
+  .wave.rm-fallback { display: flex; }
+  .wave.rm-fallback span { animation: none; }
+}
+
+/* Category illustration idle animations */
+.rp3-ill-flicker {
+  animation: rp3-flicker 2.6s steps(1) infinite;
+  transform-origin: center;
+}
+@keyframes rp3-flicker {
+  0%, 100% { opacity: 1; }
+  8%  { opacity: 0.15; }
+  12% { opacity: 0.9; }
+  16% { opacity: 0.25; }
+  22% { opacity: 1; }
+  62% { opacity: 1; }
+  66% { opacity: 0.3; }
+  70% { opacity: 1; }
+}
+.rp3-ill-hatch {
+  animation: rp3-hatch-shift 1.8s ease-in-out infinite alternate;
+}
+@keyframes rp3-hatch-shift {
+  from { transform: translateX(-1.5px); }
+  to   { transform: translateX(1.5px); }
+}
+.rp3-ill-ring {
+  opacity: 0.9;
+  animation: rp3-ring-expand 3s ease-out infinite;
+  transform-origin: center;
+}
+.rp3-ill-ring-2 { animation-delay: 0.5s; }
+.rp3-ill-ring-3 { animation-delay: 1s; }
+@keyframes rp3-ring-expand {
+  0%   { transform: scale(0.7); opacity: 0.9; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+.rp3-ill-wave {
+  animation: rp3-wave-drift 2.2s ease-in-out infinite;
+}
+.rp3-ill-wave-2 { animation-delay: 0.6s; }
+@keyframes rp3-wave-drift {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(3px); }
+}
+.rp3-ill-leaf {
+  transform-origin: 24px 24px;
+  animation: rp3-leaf-sway 3.4s ease-in-out infinite;
+}
+.rp3-ill-leaf-2 {
+  animation-delay: 0.7s;
+  transform-origin: 24px 20px;
+}
+@keyframes rp3-leaf-rustle {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(-7deg); }
+}
+.rp3-ill-leaf { animation-name: rp3-leaf-rustle; }
+.rp3-ill-grid {
+  stroke-dasharray: 3 3;
+  animation: rp3-grid-slide 4s linear infinite;
+}
+@keyframes rp3-grid-shift {
+  to { stroke-dashoffset: -6; }
+}
+.rp3-ill-grid { animation-name: rp3-grid; }
+@keyframes rp3-grid {
+  to { stroke-dashoffset: -6; }
+}
+.rp3-ill-crack {
+  animation: rp3-flicker 4.5s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp3-ill-flicker,
+  .rp3-ill-hatch,
+  .rp3-ill-ring,
+  .rp3-ill-wave,
+  .rp3-ill-leaf,
+  .rp3-ill-grid,
+  .rp3-ill-crack {
+    animation: none !important;
+    opacity: 0.85;
+    transform: none;
   }
 }

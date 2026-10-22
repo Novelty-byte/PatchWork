@@ -7,6 +7,84 @@ const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 
 const BARS = [10, 18, 28, 16, 34, 22, 40, 26, 14, 36, 20, 30, 12, 38, 24, 16, 32, 22, 12, 28];
 const TICKET_RE = /\bPW-\d{3,8}\b/i;
 
+/* ── Procedural audio wave canvas: concentric rings + bezier ribbons ── */
+function WaveCanvas({ active }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const ctx = canvas.getContext('2d');
+    let animId = 0;
+    let t = 0;
+    const dpr = window.devicePixelRatio || 1;
+
+    const fit = () => {
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, 1, 0, 0);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(canvas);
+
+    const teal = getComputedStyle(document.documentElement).getPropertyValue('--teal').trim() || '#066b5e';
+
+    function tick() {
+      const W = canvas.offsetWidth;
+      const H = canvas.offsetHeight;
+      ctx.clearRect(0, 0, W, H);
+      t += 0.03;
+
+      const cx = W / 2;
+      const cy = H / 2;
+
+      /* concentric oscillating rings */
+      for (let i = 0; i < 3; i++) {
+        const baseR = 10 + i * 9;
+        const r = baseR + Math.sin(t * (1.4 + i * 0.35)) * (active ? 4.5 : 2);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = teal;
+        ctx.globalAlpha = 0.5 - i * 0.13;
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      /* smooth bezier ribbon waves */
+      for (let b = 0; b < 2; b++) {
+        const amp = (active ? 13 : 5) + b * 4;
+        ctx.beginPath();
+        for (let x = 0; x <= W; x += 5) {
+          const y =
+            cy +
+            Math.sin(x * 0.024 + t * (2.2 + b * 0.6)) * amp * 0.5 +
+            Math.sin(x * 0.011 - t * (1.1 + b * 0.4)) * amp * 0.3;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = teal;
+        ctx.globalAlpha = (b === 0 ? 0.75 : 0.4) * (active ? 1 : 0.55);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      animId = requestAnimationFrame(tick);
+    }
+    animId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
+  }, [active]);
+
+  return <canvas ref={ref} className="rp3-wave-canvas" aria-hidden="true" />;
+}
+
 function Transcript({ lines, label, status }) {
   return (
     <div className="transcript">
@@ -200,9 +278,10 @@ export default function VoicePanel({ notify, mediaUrls = [], gpsLocation = null 
         <span className="orb is-live"><Mic size={30} /></span>
         <h3>We're listening</h3>
         <p className="muted center">Speak naturally. Your transcript appears below.</p>
-        <div className="wave" aria-hidden="true">
+        <WaveCanvas active />
+        <div className="wave rm-fallback" aria-hidden="true">
           {BARS.map((h, i) => (
-            <span key={i} style={{ height: h, animationDelay: `${i * 70}ms` }} />
+            <span key={i} style={{ height: h }} />
           ))}
         </div>
         <span className="badge badge-teal"><i className="dot" /> In call · {fmt(seconds)}</span>

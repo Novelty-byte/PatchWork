@@ -856,3 +856,349 @@ button.mg-card:hover {
 .mg2-count-grad {
   font-weight: 800;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYER 3 — Dashboard (mg3): HUD, dock, tilt, sparkline, donut
+   Additive; prefixed mg3- to avoid all collisions.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Executive Operations HUD strip ── */
+.mg3-hud {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 18px 0 4px;
+}
+@media (min-width: 640px) {
+  .mg3-hud { grid-template-columns: repeat(4, 1fr); }
+}
+.mg3-hud-tile {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-align: left;
+  color: var(--ink);
+  cursor: default;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+:root[data-theme="dark"] .mg3-hud-tile,
+:root[data-theme="cyberpunk"] .mg3-hud-tile,
+:root[data-theme="nordic"] .mg3-hud-tile {
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+}
+.mg3-hud-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--teal);
+}
+.mg3-hud-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.mg3-hud-value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.mg3-hud-trend {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal);
+}
+.mg3-hud-trend.is-warn {
+  color: var(--clay);
+}
+
+/* ── Resolution trend sparkline ── */
+.mg3-sparkline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.mg3-sparkline svg {
+  overflow: visible;
+}
+.mg3-sparkline-line {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: mg3-draw 1.6s ease-out forwards;
+}
+.mg3-sparkline-area {
+  fill: color-mix(in srgb, var(--teal) 14%, transparent);
+}
+.mg3-sparkline-dot {
+  fill: var(--teal);
+}
+@keyframes mg3-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── Category donut HUD ── */
+.mg3-donut {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.mg3-donut svg {
+  transform: rotate(-90deg);
+}
+.mg3-donut-seg {
+  fill: none;
+  stroke-width: 7;
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mg3-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.mg3-donut-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.mg3-donut-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* ── Live auto-sync sonar beacon in header ── */
+.mg3-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.mg3-sonar {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+.mg3-sonar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation: sonar-ripple 2s ease-out infinite;
+}
+.mg3-sonar.is-blip {
+  animation: sonar-ripple 0.9s ease-out;
+}
+
+/* ── 3D card tilt + gloss glare ── */
+.mg3-tilt-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease, border-color 0.15s, box-shadow 0.15s;
+  will-change: transform;
+}
+.mg3-tilt-card:hover {
+  z-index: 2;
+}
+.mg3-tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.18),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.mg3-tilt-card:hover .mg3-tilt-glare {
+  opacity: 1;
+}
+
+/* ── Hot issue heatmeter / flame upvote tiers ── */
+.mg3-vote-warm {
+  border-color: var(--amber) !important;
+  color: var(--amber-ink) !important;
+  background: var(--amber-bg) !important;
+  position: relative;
+  overflow: hidden;
+}
+.mg3-vote-warm::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.5) 50%, transparent 65%);
+  background-size: 220% 100%;
+  animation: synaptic-shimmer 2.2s linear infinite;
+  pointer-events: none;
+}
+.mg3-vote-fire {
+  border-color: var(--clay) !important;
+  color: var(--clay) !important;
+  background: var(--clay-bg) !important;
+}
+.mg3-flame {
+  display: inline-flex;
+  animation: fire-flicker 0.9s ease-in-out infinite;
+}
+.mg3-flame-text {
+  background: linear-gradient(90deg, #f97316, #dc2626, #f59e0b, #f97316);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: heat-shimmer 2.4s linear infinite;
+  font-weight: 800;
+}
+.mg3-vote-cool {
+  border-color: var(--blue);
+  color: var(--blue-ink);
+  background: var(--blue-bg);
+}
+
+/* ── Quick Command Floating Filter Dock ── */
+.mg3-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
+  box-shadow: 0 18px 40px -16px rgba(6, 107, 94, 0.45);
+  max-width: calc(100vw - 24px);
+  overflow-x: auto;
+}
+:root[data-theme="dark"] .mg3-dock,
+:root[data-theme="cyberpunk"] .mg3-dock,
+:root[data-theme="nordic"] .mg3-dock {
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+.mg3-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.15s;
+}
+.mg3-dock-btn:hover {
+  border-color: var(--teal);
+  transform: translateY(-1px);
+}
+.mg3-dock-btn.is-on {
+  border-color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 14%, transparent);
+  color: var(--teal);
+}
+
+/* ── Leaflet density rings (DashboardMap) ── */
+.mg3-map-ring {
+  border-radius: 50%;
+  border: 2px solid;
+  pointer-events: none;
+  animation: mg3-ring-pulse 2.4s ease-out infinite;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
+  opacity: 0.55;
+}
+@keyframes mg3-ring-pulse {
+  0%   { transform: scale(0.55); opacity: 0.85; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.mg3-map-ring {
+  animation-name: mg3-ring-pulse;
+}
+
+/* ── Map popup badge ── */
+.map-popup-sev {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+/* ── AI verification lightbox styling hook ── */
+.mg-panel.rp3-ai-lightbox .mg-aibox {
+  border: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
+}
+
+@media (max-width: 640px) {
+  .mg3-hud { grid-template-columns: repeat(2, 1fr); }
+  .mg3-hud-value { font-size: 19px; }
+  .mg3-dock { gap: 5px; }
+}
+
+/* HUD row: tiles + viz side by side */
+.mg3-hud-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.mg3-hud-row .mg3-hud {
+  flex: 1 1 420px;
+  margin: 0;
+}
+.mg3-hud-viz {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+@media (max-width: 720px) {
+  .mg3-hud-viz { display: none; }
+}
+/* keep dock from covering content */
+.mg-main { padding-bottom: 84px; }
+@media (min-width: 1000px) {
+  .mg-main { padding-bottom: 72px; }
+}

@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Phone,
   CircleCheck,
+  Zap,
 } from "lucide-react";
 import UploadCard from "./components/UploadCard.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
@@ -16,6 +17,7 @@ import Toasts from "./components/Toasts.jsx";
 import BgCanvas from "./components/BgCanvas.jsx";
 import { uploadFile, sendChat } from "./api";
 import ThemeToggle from "./components/ThemeToggle.jsx";
+import TicketBoardingPass from "./components/TicketBoardingPass.jsx";
 
 const MAX_FILES = 5;
 const MAX_SIZE = 25 * 1024 * 1024;
@@ -102,11 +104,14 @@ export default function App() {
         progress: 0,
         status: "uploading",
         url: null,
+        scanned: false,
+        takenAt: Date.now(),
       },
     ]);
     uploadFile(file, (p) => patchFile(id, { progress: p }))
       .then((url) => {
-        patchFile(id, { status: "done", progress: 100, url });
+        // 🔦 laser scan sweep runs once across the fresh thumbnail (CSS runs 1.1s once)
+        patchFile(id, { status: "done", progress: 100, url, scanned: true });
         // 🎉 burst on success
         spawnBurst(uploadZoneRef.current);
       })
@@ -276,6 +281,14 @@ export default function App() {
             </aside>
           </section>
 
+          {/* ── Community impact live pill ── */}
+          <div className="rp3-impact-pill" aria-live="polite">
+            <Zap size={14} aria-hidden="true" />
+            <span>
+              18 neighborhood issues resolved this week · Avg. response: 3.4 hrs
+            </span>
+          </div>
+
           {/* ── Animated step tracker ── */}
           <ol className="steps rp2-steps">
             {STEPS.map((s, i) => (
@@ -359,6 +372,7 @@ export default function App() {
                   onSend={handleSend}
                   showChips={showChips}
                   chips={quickChips || undefined}
+                  done={Boolean(done)}
                 >
                   {done && (
                     <div className="st-done">
@@ -386,6 +400,12 @@ export default function App() {
                       >
                         View status
                       </Link>
+                      {/* 🎟 Digital boarding-pass ticket with hologram stamp */}
+                      <TicketBoardingPass
+                        ticketId={done.id}
+                        gpsLocation={gpsLocation}
+                        timestamp={new Date().toISOString()}
+                      />
                     </div>
                   )}
                 </ChatPanel>

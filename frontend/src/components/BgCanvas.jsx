@@ -302,6 +302,130 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
       tick();
     }
 
+    /* ══════════════ RADAR MODE (layer 3) ══════════════ */
+    if (mode === "radar") {
+      let t = 0;
+      let nodes = [];
+      const NODE_COUNT = 26;
+
+      function makeNodes() {
+        nodes = [];
+        for (let i = 0; i < NODE_COUNT; i++) {
+          nodes.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: 1.6 + Math.random() * 1.8,
+            blink: Math.random() * Math.PI * 2,
+            drift: (Math.random() - 0.5) * 0.06,
+          });
+        }
+      }
+      makeNodes();
+
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        t += 1;
+        const dark = isDark();
+
+        /* concentric range rings from top-center like a civic ops radar */
+        const cx = W * 0.5;
+        const cy = H * 0.12;
+        const maxR = Math.hypot(W, H);
+        const ringColor = dark ? "63,181,162" : "6,107,94";
+        for (let i = 1; i <= 6; i++) {
+          const r = (maxR / 6) * i;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${ringColor},${dark ? 0.07 : 0.05})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        /* radial spokes */
+        for (let s = 0; s < 12; s++) {
+          const a = (s / 12) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx + Math.cos(a) * maxR, cy + Math.sin(a) * maxR);
+          ctx.strokeStyle = `rgba(${ringColor},${dark ? 0.05 : 0.04})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+
+        /* slow circular sweeping beam (conic wedge) */
+        const sweepAngle = (t * 0.006) % (Math.PI * 2);
+        const grad = ctx.createConicGradient
+          ? ctx.createConicGradient(sweepAngle, cx, cy)
+          : null;
+        if (grad) {
+          grad.addColorStop(0, `rgba(${ringColor},${dark ? 0.16 : 0.1})`);
+          grad.addColorStop(0.12, "transparent");
+          grad.addColorStop(1, "transparent");
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, maxR, 0, Math.PI * 2);
+          ctx.translate(-cx, -cy);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.restore();
+          /* fill the wedge with the gradient rotation applied */
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, maxR, sweepAngle - 0.5, sweepAngle);
+          ctx.closePath();
+          const wg = ctx.createLinearGradient(cx, cy, cx + Math.cos(sweepAngle) * maxR, cy + Math.sin(sweepAngle) * maxR);
+          wg.addColorStop(0, `rgba(${ringColor},${dark ? 0.18 : 0.1})`);
+          wg.addColorStop(1, "transparent");
+          ctx.fillStyle = wg;
+          ctx.fill();
+          ctx.restore();
+        } else {
+          /* fallback for browsers without conic gradients */
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, maxR, sweepAngle - 0.55, sweepAngle);
+          ctx.closePath();
+          ctx.fillStyle = `rgba(${ringColor},${dark ? 0.06 : 0.04})`;
+          ctx.fill();
+          ctx.restore();
+        }
+
+        /* neighborhood nodes + connections */
+        for (const n of nodes) {
+          n.x += n.vx0 || 0;
+          n.blink += 0.02;
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const dx = nodes[i].x - nodes[j].x;
+            const dy = nodes[i].y - nodes[j].y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 170) {
+              const alpha = (1 - dist / 170) * (dark ? 0.12 : 0.08);
+              ctx.beginPath();
+              ctx.moveTo(nodes[i].x, nodes[i].y);
+              ctx.lineTo(nodes[j].x, nodes[j].y);
+              ctx.strokeStyle = `rgba(${ringColor},${alpha})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+        for (const n of nodes) {
+          const glow = 0.5 + 0.5 * Math.sin(n.blink);
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${ringColor},${(dark ? 0.4 : 0.28) * (0.5 + 0.5 * glow)})`;
+          ctx.fill();
+        }
+
+        animId = requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
     /* ══════════════ SCENE MODE (layer 2) ══════════════ */
     if (mode === "scene") {
       let t = 0;

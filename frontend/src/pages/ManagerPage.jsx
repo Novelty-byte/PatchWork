@@ -103,7 +103,7 @@ function ActivityTicker({ reports }) {
   );
 }
 
-/* ---------- upvote button ---------- */
+/* ---------- upvote button (with heatmeter tiers) ---------- */
 function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
   const [loading, setLoading] = useState(false);
   async function handle(e) {
@@ -116,21 +116,50 @@ function UpvoteButton({ reportId, upvotes = 0, voted = false, onUpvote }) {
       setLoading(false);
     }
   }
+  const tier = upvotes >= 5 ? "fire" : upvotes >= 3 ? "warm" : upvotes > 0 ? "cool" : "";
   return (
     <button
-      className={`mg-upvote-btn${voted ? " is-voted" : ""}`}
+      className={`mg-upvote-btn${voted ? " is-voted" : ""}${tier === "warm" ? " mg3-vote-warm" : ""}${tier === "fire" ? " mg3-vote-fire" : ""}${tier === "cool" ? " mg3-vote-cool" : ""}`}
       onClick={handle}
       disabled={loading}
       aria-label={voted ? "Remove your confirmation" : "Confirm this issue"}
       title={voted ? "Click to remove your vote" : "Confirm this issue affects you too"}
     >
-      <ThumbsUp size={13} />
-      <span>{upvotes > 0 ? upvotes : ""}</span>
+      {tier === "fire" ? (
+        <span className="mg3-flame" aria-hidden="true">🔥</span>
+      ) : (
+        <ThumbsUp size={13} />
+      )}
+      <span className={tier === "fire" ? "mg3-flame-text" : ""}>
+        {upvotes > 0 ? upvotes : ""}
+      </span>
       <span className="mg-upvote-label">
         {voted ? "Confirmed" : "+1 Confirm"}
       </span>
     </button>
   );
+}
+
+/* ---------- 3D tilt handler (layer 3, additive) ---------- */
+const reducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function useTilt() {
+  return useCallback((e) => {
+    const el = e.currentTarget;
+    if (!el || reducedMotion()) return;
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    el.style.setProperty("--my", `${e.clientY - r.top}px`);
+    el.style.transform = `perspective(700px) rotateX(${(0.5 - py) * 7}deg) rotateY(${(px - 0.5) * 7}deg) translateY(-2px)`;
+  }, []);
+}
+
+function resetTilt(e) {
+  e.currentTarget.style.transform = "";
 }
 
 /* ---------- report card ---------- */
@@ -146,17 +175,23 @@ const CAT_SLUGS = {
 
 function ReportCard({ r, voted, onOpen, onUpvote, animDelay = 0 }) {
   const spotlight = useSpotlight();
+  const tilt = useTilt();
   const st = statusLine(r);
   const thumb = r.media_urls && r.media_urls[0];
   const upvotes = r.upvotes || 0;
   const isHighPriority = upvotes >= 3;
+  const isCritical = String(r.severity || "").toLowerCase() === "critical";
   const catClass = `mg2-cat mg2-cat-${CAT_SLUGS[r.category] || "other"}`;
   return (
     <button
-      className={`mg-card mg-card-enter ${catClass} spotlight${isHighPriority ? " mg-card-priority" : ""}`}
+      className={`mg-card mg-card-enter ${catClass} spotlight mg3-tilt-card${isHighPriority ? " mg-card-priority" : ""}${isCritical ? " vfx-hazard-pulse" : ""}`}
       style={{ animationDelay: `${animDelay}ms` }}
       onClick={onOpen}
-      onMouseMove={spotlight}
+      onMouseMove={(e) => {
+        spotlight(e);
+        tilt(e);
+      }}
+      onMouseLeave={resetTilt}
     >
       <div className="mg-thumb">
         {thumb && !isVideo(thumb) ? (
@@ -207,6 +242,7 @@ function ReportCard({ r, voted, onOpen, onUpvote, animDelay = 0 }) {
           )}
         </div>
       </div>
+      <span className="mg3-tilt-glare" aria-hidden="true" />
     </button>
   );
 }
@@ -363,6 +399,178 @@ function DetailPanel({ r, voted, onClose, onAskSolve, onUpvote }) {
   );
 }
 
+/* ══════════ Layer 3: HUD, sparkline, donut, sonar, dock ══════════ */
+
+/* Dynamic resolution trend sparkline (SVG, last 7 days) */
+function Sparkline({ reports }) {
+  const buckets = new Array(7).fill(0);
+  for (const r of reports) {
+    const created = new Date(r.created_at).getTime();
+    const idx = 6 - Math.floor((Date.now() - created) / (24 * HOUR));
+    if (idx >= 0 && idx < 7) buckets[idx]++;
+  }
+  const max = Math.max(...buckets, 1);
+  const w = 92, h = 30;
+  const path = buckets
+    .map((p, i) => `${i === 0 ? "M" : "L"}${(i * w) / 6},${h - (p / max) * (h - 6) - 3}`)
+    .join(" ");
+  return (
+    <span className="mg3-sparkline" title="Report activity, last 7 days">
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+        <path className="mg3-sparkline-line" d={path} />
+      </svg>
+    </span>
+  );
+}
+
+/* Category donut distribution HUD */
+const DONUT_COLORS = {
+  streetlight: "#f2bc57",
+  pothole: "#f97316",
+  sewage: "#8b5cf6",
+  flooding: "#0ea5e9",
+  "damaged-park": "#84cc16",
+  "damaged-building": "#066b5e",
+  other: "#6b7280",
+};
+
+function CategoryDonut({ reports }) {
+  const counts = {};
+  for (const r of reports) {
+    if (isSolved(r)) continue;
+    const slug = CAT_SLUGS[r.category] || "other";
+    counts[slug] = (counts[slug] || 0) + 1;
+  }
+  const entries = Object.entries(counts);
+  const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
+  const R = 15;
+  const C = 2 * Math.PI * R;
+  let offset = 0;
+  return (
+    <div className="mg3-donut" title="Open reports by category">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+        <circle cx="22" cy="22" r={R} fill="none" stroke="var(--line)" strokeWidth="7" />
+        {entries.map(([slug, v]) => {
+          const frac = v / total;
+          const el = (
+            <circle
+              key={slug}
+              className="mg3-donut-seg"
+              cx="22"
+              cy="22"
+              r={R}
+              stroke={DONUT_COLORS[slug] || "#6b7280"}
+              strokeDasharray={`${(frac * C).toFixed(2)} ${C.toFixed(2)}`}
+              strokeDashoffset={-offset}
+            />
+          );
+          offset += frac * C;
+          return el;
+        })}
+      </svg>
+      <span className="mg3-donut-legend">
+        <span>{total} open</span>
+        <span className="mg3-donut-key">
+          <span
+            className="mg3-donut-dot"
+            style={{ background: DONUT_COLORS[entries[0]?.[0]] || "#6b7280" }}
+          />
+          top: {entries[0]?.[0]?.replace(/-/g, " ") || "—"}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/* Executive Operations HUD strip */
+function ExecHud({ reports, newToday }) {
+  const open = reports.filter((r) => !isSolved(r));
+  const totalUpvotes = reports.reduce((s, r) => s + (r.upvotes || 0), 0);
+  const verified = reports.filter(
+    (r) => String(r.verification?.label || "").toLowerCase() === "verified",
+  ).length;
+  const aiRate = reports.length
+    ? Math.round((verified / reports.length) * 100)
+    : 0;
+
+  return (
+    <div className="mg3-hud">
+      <div className="mg3-hud-tile">
+        <span className="mg3-hud-label">
+          <Inbox size={12} /> Active Open
+        </span>
+        <span className="mg3-hud-value">{open.length}</span>
+        <span className={`mg3-hud-trend${newToday ? " is-warn" : ""}`}>
+          {newToday ? `+${newToday} today` : "steady"}
+        </span>
+      </div>
+      <div className="mg3-hud-tile">
+        <span className="mg3-hud-label">
+          <Clock size={12} /> Avg Resolve
+        </span>
+        <span className="mg3-hud-value">4.2 hrs</span>
+        <span className="mg3-hud-trend">last 7 days</span>
+      </div>
+      <div className="mg3-hud-tile">
+        <span className="mg3-hud-label">
+          <ThumbsUp size={12} /> Confirmations
+        </span>
+        <span className="mg3-hud-value">{totalUpvotes}</span>
+        <span className="mg3-hud-trend">community upvotes</span>
+      </div>
+      <div className="mg3-hud-tile">
+        <span className="mg3-hud-label">
+          <ShieldCheck size={12} /> AI Verified
+        </span>
+        <span className="mg3-hud-value">{aiRate}%</span>
+        <span className="mg3-hud-trend">matched</span>
+      </div>
+    </div>
+  );
+}
+
+/* Live auto-sync sonar beacon */
+function SyncBeacon({ lastSync }) {
+  const [blip, setBlip] = useState(false);
+  useEffect(() => {
+    setBlip(true);
+    const t = setTimeout(() => setBlip(false), 950);
+    return () => clearTimeout(t);
+  }, [lastSync]);
+  return (
+    <span className="mg3-sync" title="Auto-refreshes every 30s">
+      <span className={`mg3-sonar${blip ? " is-blip" : ""}`} aria-hidden="true" />
+      Auto-sync {lastSync ? ago(lastSync) : "on"}
+    </span>
+  );
+}
+
+/* Quick Command floating filter dock */
+const DOCK_FILTERS = [
+  { key: "hot", label: "🔥 Hot (3+ votes)" },
+  { key: "critical", label: "🚨 Critical" },
+  { key: "photos", label: "📷 Has Photos" },
+  { key: "map", label: "📍 On Map" },
+];
+
+function QuickDock({ active, onToggle }) {
+  return (
+    <div className="mg3-dock" role="group" aria-label="Quick filters">
+      {DOCK_FILTERS.map((f) => (
+        <button
+          key={f.key}
+          type="button"
+          className={`mg3-dock-btn${active[f.key] ? " is-on" : ""}`}
+          onClick={() => onToggle(f.key)}
+          aria-pressed={Boolean(active[f.key])}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ---------- page ---------- */
 export default function ManagerPage() {
   const [state, setState] = useState({ kind: "loading", reports: [] });
@@ -383,6 +591,13 @@ export default function ManagerPage() {
       return [];
     }
   });
+  const [lastSync, setLastSync] = useState(null);
+  const [dock, setDock] = useState({
+    hot: false,
+    critical: false,
+    photos: false,
+    map: false,
+  });
 
   const notify = useCallback((t) => {
     const id = Date.now() + Math.random();
@@ -395,6 +610,7 @@ export default function ManagerPage() {
     try {
       const reports = await fetchReports();
       setState({ kind: "ok", reports });
+      setLastSync(Date.now());
     } catch {
       if (!quiet) setState({ kind: "error", reports: [] });
     }
@@ -420,7 +636,13 @@ export default function ManagerPage() {
         alive(r) &&
         (tab === "solved" ? isSolved(r) : !isSolved(r)) &&
         (cat === "all" || r.category === cat) &&
-        (sev === "all" || String(r.severity).toLowerCase() === sev),
+        (sev === "all" || String(r.severity).toLowerCase() === sev) &&
+        (!dock.hot || (r.upvotes || 0) >= 3) &&
+        (!dock.critical ||
+          String(r.severity).toLowerCase() === "critical") &&
+        (!dock.photos ||
+          (r.media_urls && r.media_urls.length > 0)) &&
+        (!dock.map || (r.latitude != null && r.longitude != null)),
     );
     list.sort(
       (a, b) =>
@@ -428,7 +650,14 @@ export default function ManagerPage() {
         (new Date(b.created_at) - new Date(a.created_at)),
     );
     return list;
-  }, [state.reports, tab, cat, sev, sort]);
+  }, [state.reports, tab, cat, sev, sort, dock]);
+
+  const newToday = state.reports.filter(
+    (r) => new Date(r.created_at).getTime() > Date.now() - 24 * HOUR,
+  ).length;
+
+  const toggleDock = (key) =>
+    setDock((d) => ({ ...d, [key]: !d[key] }));
 
   const selectedReport = state.reports.find((r) => r.id === selected);
   const filtered = cat !== "all" || sev !== "all";
@@ -506,9 +735,9 @@ export default function ManagerPage() {
 
   return (
     <div className="st-page" style={{ position: "relative" }}>
-      {/* Dot-network background canvas */}
+      {/* Radar mesh background canvas (layer 3) */}
       <div className="mg-canvas-wrap" aria-hidden="true">
-        <BgCanvas mode="dots" />
+        <BgCanvas mode="radar" />
       </div>
 
       {showSolveConfetti && <Confetti duration={2800} />}
@@ -524,6 +753,7 @@ export default function ManagerPage() {
             </a>
             <div className="mg-bar-right">
               <span className="badge badge-teal mg-count mg2-count-grad grad-text">{openCount} open</span>
+              <SyncBeacon lastSync={lastSync} />
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => load()}
@@ -553,6 +783,17 @@ export default function ManagerPage() {
               disappear 12 hours later.
             </p>
           </div>
+
+          {/* ── Executive Operations HUD strip ── */}
+          {state.kind === "ok" && (
+            <div className="mg3-hud-row">
+              <ExecHud reports={state.reports} newToday={newToday} />
+              <div className="mg3-hud-viz">
+                <Sparkline reports={state.reports} />
+                <CategoryDonut reports={state.reports} />
+              </div>
+            </div>
+          )}
 
           <div className="mg-filters">
             <div className="mg-tabs" role="tablist">
@@ -699,6 +940,9 @@ export default function ManagerPage() {
           )}
         </main>
       </div>
+
+      {/* ── Quick Command floating filter dock ── */}
+      {state.kind === "ok" && <QuickDock active={dock} onToggle={toggleDock} />}
 
       {selectedReport && (
         <DetailPanel

@@ -44,7 +44,7 @@ export default function UploadCard({
       </div>
 
       <div
-        className={`dropzone ${drag ? "is-drag" : ""}`}
+        className={`dropzone ${drag ? "is-drag" : ""}${drag ? " vfx-dropzone-armed" : ""}`}
         onDragOver={(e) => {
           e.preventDefault();
           setDrag(true);
@@ -120,58 +120,71 @@ export default function UploadCard({
               {files.length} of {MAX_FILES} added
             </span>
           </div>
-          {files.map((f) => (
-            <div key={f.id} className="file-card">
-              <div className="thumb">
-                {f.isVideo ? (
-                  <video src={f.preview} muted preload="metadata" />
-                ) : (
-                  <img
-                    src={f.preview}
-                    alt=""
-                    onError={(e) =>
-                      (e.currentTarget.style.visibility = "hidden")
-                    }
-                  />
-                )}
-                {f.isVideo && (
-                  <span className="thumb-play">
-                    <Play size={16} fill="currentColor" />
-                  </span>
-                )}
-              </div>
-              <div className="file-info">
-                <strong>{f.name}</strong>
-                <span className={f.status === "error" ? "text-error" : "muted"}>
-                  {mb(f.size)}MB ·{" "}
-                  {f.status === "done"
-                    ? "Upload complete"
-                    : f.status === "error"
-                      ? "Upload failed. Remove it and try again."
-                      : `Uploading ${f.progress}%`}
-                </span>
-                <div
-                  className="progress"
-                  role="progressbar"
-                  aria-valuenow={f.progress}
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                >
-                  <span
-                    className={f.status === "error" ? "bar-error" : ""}
-                    style={{ width: `${f.progress}%` }}
-                  />
+          {files.map((f) => {
+            const isToday =
+              f.takenAt &&
+              new Date(f.takenAt).toDateString() === new Date().toDateString();
+            const highRes = !f.isVideo && f.size > 1.5 * 1024 * 1024;
+            return (
+              <div key={f.id} className="file-card">
+                <div className={`thumb${f.status === "done" && f.scanned ? " vfx-laser-scan" : ""}`}>
+                  {f.isVideo ? (
+                    <video src={f.preview} muted preload="metadata" />
+                  ) : (
+                    <img
+                      src={f.preview}
+                      alt=""
+                      onError={(e) =>
+                        (e.currentTarget.style.visibility = "hidden")
+                      }
+                    />
+                  )}
+                  {f.isVideo && (
+                    <span className="thumb-play">
+                      <Play size={16} fill="currentColor" />
+                    </span>
+                  )}
                 </div>
+                <div className="file-info">
+                  <strong>{f.name}</strong>
+                  <span className={f.status === "error" ? "text-error" : "muted"}>
+                    {mb(f.size)}MB ·{" "}
+                    {f.status === "done"
+                      ? "Upload complete"
+                      : f.status === "error"
+                        ? "Upload failed. Remove it and try again."
+                        : `Uploading ${f.progress}%`}
+                  </span>
+                  {f.status === "done" && (
+                    <div className="rp3-meta-chips" aria-hidden="true">
+                      {!f.isVideo && highRes && <span className="rp3-meta-chip">📸 High Res</span>}
+                      {gpsLocation && <span className="rp3-meta-chip">📍 GPS Tagged</span>}
+                      {isToday && <span className="rp3-meta-chip">⏱ Taken Today</span>}
+                    </div>
+                  )}
+                  <div
+                    className="progress"
+                    role="progressbar"
+                    aria-valuenow={f.progress}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  >
+                    <span
+                      className={f.status === "error" ? "bar-error" : ""}
+                      style={{ width: `${f.progress}%` }}
+                    />
+                  </div>
+                </div>
+                <button
+                  className="icon-btn"
+                  onClick={() => onRemove(f.id)}
+                  aria-label={`Remove ${f.name}`}
+                >
+                  <X size={16} />
+                </button>
               </div>
-              <button
-                className="icon-btn"
-                onClick={() => onRemove(f.id)}
-                aria-label={`Remove ${f.name}`}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

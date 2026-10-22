@@ -1,9 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, Sparkles } from 'lucide-react';
+import CategoryIllustration from './CategoryIllustration.jsx';
 
 const CHIPS = ['Near the main gate', 'Near the park', 'Type a location'];
 
-export default function ChatPanel({ messages, typing, onSend, children, showChips, chips = CHIPS }) {
+const QUICK_PICKS = [
+  'Broken Streetlight',
+  'Pothole',
+  'Sewage',
+  'Flooding',
+  'Damaged Park',
+  'Damaged Building',
+];
+
+export default function ChatPanel({ messages, typing, onSend, children, showChips, chips = CHIPS, done = false }) {
   const [text, setText] = useState('');
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -22,7 +32,7 @@ export default function ChatPanel({ messages, typing, onSend, children, showChip
   return (
     <div className="chat">
       <div className="chat-head">
-        <span className="icon-tile sm">
+        <span className={`icon-tile sm${typing ? ' rp3-synaptic' : ''}`}>
           <Sparkles size={16} />
         </span>
         <strong>Patch is here to help</strong>
@@ -31,7 +41,10 @@ export default function ChatPanel({ messages, typing, onSend, children, showChip
 
       <div className="messages" role="log" aria-live="polite">
         {messages.map((m, i) => (
-          <div key={i} className={`bubble ${m.role === 'user' ? 'bubble-user' : 'bubble-bot'}`}>
+          <div
+            key={i}
+            className={`bubble ${m.role === 'user' ? 'bubble-user' : 'bubble-bot'}${m.role === 'assistant' && typing && i === messages.length - 1 ? ' rp3-synaptic' : ''}`}
+          >
             <span className="bubble-label">{m.role === 'user' ? 'You' : 'Patch · AI assistant'}</span>
             <p>{m.text}</p>
           </div>
@@ -61,6 +74,26 @@ export default function ChatPanel({ messages, typing, onSend, children, showChip
       </div>
 
       {children}
+
+      {!done && (
+        <div className="rp3-quickpick" role="group" aria-label="Common categories">
+          {QUICK_PICKS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="rp3-qp-card"
+              onClick={() => send(c)}
+              disabled={typing}
+              title={`Report: ${c}`}
+            >
+              <span className="rp3-qp-ill" style={{ color: 'var(--teal)' }}>
+                <CategoryIllustration category={c} />
+              </span>
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
 
       <form
         className="chat-input"

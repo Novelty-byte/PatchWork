@@ -42,6 +42,49 @@ function pinIcon(r) {
   });
 }
 
+/* Cluster density: group points within ~120m and render pulsing rings */
+function densityRings(mappable) {
+  const clusters = [];
+  for (const r of mappable) {
+    let placed = false;
+    for (const c of clusters) {
+      if (
+        Math.abs(c.lat - r.latitude) < 0.0012 &&
+        Math.abs(c.lng - r.longitude) < 0.0012
+      ) {
+        c.count++;
+        c.lat = (c.lat + r.latitude) / 2;
+        c.lng = (c.lng + r.longitude) / 2;
+        c.maxSev = r.severity || c.maxSev;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      clusters.push({
+        lat: r.latitude,
+        lng: r.longitude,
+        count: 1,
+        maxSev: r.severity || "medium",
+      });
+    }
+  }
+  // only clusters with 2+ reports get a ring
+  return clusters.filter((c) => c.count >= 2);
+}
+
+const RING_COLOR = { critical: "#dc2626", high: "#ea580c", medium: "#0d9488", low: "#6b7280" };
+
+function ringIcon(cluster) {
+  const color = RING_COLOR[String(cluster.maxSev || "").toLowerCase()] || "#0d9488";
+  const size = 46 + Math.min(cluster.count, 6) * 10;
+  return L.divIcon({
+    html: `<span class="mg3-map-ring" style="width:${size}px;height:${size}px;border-color:${color};color:${color}"></span>`,
+    className: "",
+    iconSize: [0, 0],
+  });
+}
+
 function popupHtml(r) {
   const thumb = r.media_urls && r.media_urls[0];
   const isVid = thumb && /\.(mp4|mov|webm)/i.test(thumb);
@@ -99,6 +142,13 @@ export default function DashboardMap({ reports, onOpenReport }) {
         });
         return m;
       });
+
+      // Pulsing density rings under 2+ report clusters (layer 3)
+      for (const cluster of densityRings(mappable)) {
+        L.marker([cluster.lat, cluster.lng], { icon: ringIcon(cluster), interactive: false })
+          .addTo(map)
+          .setZIndexOffset(-1000);
+      }
 
       // Fly to the latest report on open
       const latest = mappable[0];
