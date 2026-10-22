@@ -21,12 +21,12 @@ import {
 } from "lucide-react";
 import Toasts from "../components/Toasts.jsx";
 import { CATEGORIES } from "../components/UploadCard.jsx";
-import { fetchReports, markSolved, upvoteReport } from "../managerApi";
+import { fetchReports, markSolved, upvoteReport } from "../services/managerApi";
 import DashboardMap from "../components/DashboardMap.jsx";
 import BgCanvas from "../components/BgCanvas.jsx";
 import Confetti from "../components/Confetti.jsx";
-import "../status.css";
-import "../manager.css";
+import "../styles/status.css";
+import "../styles/manager.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import useSpotlight from "../hooks/useSpotlight.js";
 
@@ -40,7 +40,7 @@ import {
   endOf,
   statusLine,
   verInfo,
-} from "../reportUtils.js";
+} from "../utils/reportUtils.js";
 
 export { formatLocationWithGps };
 

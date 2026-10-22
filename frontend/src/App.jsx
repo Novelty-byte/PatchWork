@@ -15,7 +15,7 @@ import ChatPanel from "./components/ChatPanel.jsx";
 import VoicePanel from "./components/VoicePanel.jsx";
 import Toasts from "./components/Toasts.jsx";
 import BgCanvas from "./components/BgCanvas.jsx";
-import { uploadFile, sendChat } from "./api";
+import { uploadFile, sendChat } from "./services/api";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 import TicketBoardingPass from "./components/TicketBoardingPass.jsx";
 

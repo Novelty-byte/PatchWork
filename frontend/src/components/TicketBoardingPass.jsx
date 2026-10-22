@@ -1,5 +1,5 @@
 import { MapPin, Clock3 } from "lucide-react";
-import { fmtLong } from "../reportUtils.js";
+import { fmtLong } from "../utils/reportUtils.js";
 
 /* Tiny deterministic pseudo-QR mockup (decorative, aria-hidden) */
 function qrCells(seedStr) {

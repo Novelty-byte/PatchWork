@@ -5,7 +5,7 @@ import App from "./App.jsx";
 import StatusPage, { Layout, NotFoundView } from "./pages/StatusPage.jsx";
 import ManagerPage from "./pages/ManagerPage.jsx";
 import Landing from "./pages/Landing.jsx";
-import "./styles.css";
+import "./styles/styles.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

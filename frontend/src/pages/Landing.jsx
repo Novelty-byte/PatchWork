@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import BgCanvas from "../components/BgCanvas.jsx";
-import { fetchReports } from "../managerApi";
+import { fetchReports } from "../services/managerApi";
 import useSpotlight from "../hooks/useSpotlight.js";
-import "../landing.css";
+import "../styles/landing.css";
 
 const LOGO = "/patchwork-logo.jpeg";
 

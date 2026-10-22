@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mic, Phone, PhoneOff, PhoneOutgoing, Check, ArrowRight } from 'lucide-react';
-import { MOCK, getVapiConfig, getLatestVoiceTicket } from '../api';
+import { MOCK, getVapiConfig, getLatestVoiceTicket } from '../services/api';
 
 const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 const BARS = [10, 18, 28, 16, 34, 22, 40, 26, 14, 36, 20, 30, 12, 38, 24, 16, 32, 22, 12, 28];

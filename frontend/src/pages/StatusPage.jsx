@@ -15,8 +15,8 @@ import {
   ThumbsUp,
   TriangleAlert,
 } from "lucide-react";
-import { getReport, upvoteReport } from "../statusApi";
-import "../status.css";
+import { getReport, upvoteReport } from "../services/statusApi";
+import "../styles/status.css";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import BgCanvas from "../components/BgCanvas.jsx";
 import Confetti from "../components/Confetti.jsx";
@@ -26,7 +26,7 @@ import {
   fmtShort,
   verInfo,
   isSolved,
-} from "../reportUtils.js";
+} from "../utils/reportUtils.js";
 
 /* ---------- shared layout ---------- */
 export function Layout({ children }) {
