@@ -222,12 +222,13 @@ VITE_USE_MOCK=false
 
 ### Reporting Process
 1. **Media Upload**: Resident uploads photos/videos (optional)
-2. **AI Intake**: Resident chooses chat or voice mode to describe the issue
-3. **AI Processing**: AI extracts structured data (category, location, name, email)
-4. **Ticket Creation**: System creates a report with unique ID (PW-XXXXXX)
-5. **Verification**: AI checks uploaded media for authenticity
-6. **Notifications**: Email sent to resident and manager
-7. **Dashboard Update**: Report appears on community dashboard
+2. **GPS Location Upload**: Resident upload the location of the problem by either choosing current location or by panning and selecting through the map (Best to set)
+3. **AI Intake**: Resident chooses chat or voice mode to describe the issue
+4. **AI Processing**: AI extracts structured data (category, location, name, email)
+5. **Ticket Creation**: System creates a report with unique ID (PW-XXXXXX)
+6. **Verification**: AI checks uploaded media for authenticity
+7. **Notifications**: Email sent to resident and manager
+8. **Dashboard Update**: Report appears on community dashboard
 
 ### Dashboard Workflow
 1. **Live Updates**: Dashboard auto-refreshes every 30 seconds
