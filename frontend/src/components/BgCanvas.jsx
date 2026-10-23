@@ -207,10 +207,22 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
       tick();
     } else if (mode === "scene") {
       let t = 0;
-      let far = [], near = [], windows = [];
+      let far = [], near = [], windows = [], stars = [];
       function mulberry(seed) { return function () { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let z = Math.imul(seed ^ (seed >>> 15), 1 | seed); z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z; return ((z ^ (z >>> 14)) >>> 0) / 4294967296; }; }
+      function meteorRgb() {
+        const th = document.documentElement.getAttribute("data-theme");
+        if (th === "cyberpunk") return "0,240,255";
+        if (th === "nordic") return "125,211,252";
+        if (th === "solar-punk") return "4,120,87";
+        if (th === "dark") return "255,255,255";
+        return "6,107,94";
+      }
+      function meteorDim() {
+        const th = document.documentElement.getAttribute("data-theme");
+        return th === "light" || th === "solar-punk" ? 0.55 : 1;
+      }
       function buildScene() {
-        const rand = mulberry(42); far = []; near = []; windows = [];
+        const rand = mulberry(42); far = []; near = []; windows = []; stars = [];
         let x = -20;
         while (x < W + 60) {
           const w = 40 + rand() * 70, h = H * (0.18 + rand() * 0.22);
@@ -225,9 +237,30 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
           }
           x += w + rand() * 30;
         }
+        for (let i = 0; i < 36; i++) stars.push({ x: rand() * W, y: rand() * H * 0.5, phase: rand() * Math.PI * 2, meteor: false });
+        for (let i = 0; i < 6; i++) {
+          stars.push({
+            x: rand() * W, y: rand() * H * 0.35, phase: 0, meteor: true,
+            vx: 2.2 + rand() * 2.6, vy: (rand() - 0.3) * 0.7,
+            life: rand() * 400, len: 10 + rand() * 26,
+          });
+        }
       }
       buildScene();
       sceneRo = new ResizeObserver(buildScene); sceneRo.observe(canvas);
+      function drawLamp(x, y, dark, flicker, rgb) {
+        const glowR = dark ? 46 : 30;
+        const g = ctx.createRadialGradient(x, y - 52, 2, x, y - 52, glowR);
+        g.addColorStop(0, `rgba(${rgb},${(dark ? 0.5 : 0.25) * flicker})`);
+        g.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y - 52, glowR, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = dark ? "rgba(63,181,162,0.5)" : "rgba(6,107,94,0.4)";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 48); ctx.stroke();
+        ctx.fillStyle = dark ? "rgba(242,188,87,0.9)" : "rgba(242,188,87,0.55)";
+        ctx.beginPath(); ctx.arc(x, y - 54, 3, 0, Math.PI * 2); ctx.fill();
+      }
       function tick() {
         ctx.clearRect(0, 0, W, H);
         t += 1;
@@ -235,10 +268,35 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
         const sky = ctx.createLinearGradient(0, 0, 0, H);
         sky.addColorStop(0, dark ? "#0a1512" : "#dcefe6"); sky.addColorStop(1, dark ? "#0e1a17" : "#f6f6f1");
         ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-        if (dark) {
-          ctx.fillStyle = "#fff"; ctx.globalAlpha = 0.5;
-          for (let i = 0; i < 40; i++) ctx.fillRect(Math.random() * W, Math.random() * H * 0.5, 1.6, 1.6);
-          ctx.globalAlpha = 1;
+        const mRgb = meteorRgb(), mDim = meteorDim();
+        const meteors = stars.filter(s => s.meteor);
+        const still = stars.filter(s => !s.meteor);
+        for (const s of still) {
+          const tw = 0.25 + 0.45 * Math.abs(Math.sin(t * 0.01 + s.phase));
+          ctx.globalAlpha = tw * mDim;
+          ctx.fillStyle = `rgb(${mRgb})`;
+          ctx.fillRect(s.x, s.y, 1.6, 1.6);
+        }
+        for (const m of meteors) {
+          m.x += m.vx; m.y += m.vy;
+          m.life -= 1;
+          if (m.life <= 0 || m.x > W + 80) {
+            m.x = -60 - Math.random() * W * 0.4;
+            m.y = Math.random() * H * 0.4;
+            m.vx = 2.2 + Math.random() * 2.6;
+            m.vy = (Math.random() - 0.3) * 0.7;
+            m.life = 220 + Math.random() * 260;
+            m.len = 10 + Math.random() * 26;
+          }
+          const a = Math.min(1, m.life / 40) * mDim;
+          const trail = ctx.createLinearGradient(m.x, m.y, m.x - m.vx * m.len * 0.4, m.y - m.vy * m.len * 0.4);
+          trail.addColorStop(0, `rgba(${mRgb},${0.8 * a})`);
+          trail.addColorStop(1, `rgba(${mRgb},0)`);
+          ctx.strokeStyle = trail;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x - m.vx * m.len * 0.4, m.y - m.vy * m.len * 0.4); ctx.stroke();
+          ctx.fillStyle = `rgba(255,255,255,${0.9 * a})`;
+          ctx.fillRect(m.x, m.y, 1.8, 1.8);
         }
         const farOff = (t * 0.04) % (W + 120);
         ctx.save(); ctx.translate(-farOff, 0);
@@ -258,8 +316,8 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
         ctx.restore();
         for (let i = 0; i < 5; i++) {
           const lampX = W * (0.08 + i * 0.21);
-          ctx.fillStyle = `rgba(242,188,87,${(dark ? 0.5 : 0.25) * (dark ? 0.75 + 0.25 * Math.sin(t * 0.05 + i * 2) : 0.35)})`;
-          ctx.beginPath(); ctx.arc(lampX, H - 56, dark ? 46 : 30, 0, Math.PI * 2); ctx.fill();
+          const flicker = dark ? 0.75 + 0.25 * Math.sin(t * 0.05 + i * 2) : 0.35;
+          drawLamp(lampX, H - 4, dark, flicker, "242,188,87");
         }
         animId = requestAnimationFrame(tick);
       }

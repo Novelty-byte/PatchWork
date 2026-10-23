@@ -112,7 +112,7 @@
   letter-spacing: -0.02em;
 }
 .lp-grad {
-  background: linear-gradient(90deg, var(--teal), #7bd88f, var(--teal));
+  background: var(--community-grad, linear-gradient(90deg, var(--teal), #7bd88f, var(--teal)));
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
