@@ -317,8 +317,8 @@ export default function Landing() {
         const reports = Array.isArray(data) ? data : (data?.reports || []);
 
         // Use the total historical counts if provided, otherwise fallback to dashboard count
-        const totalReportsTracked = data?.total_reports_tracked || reports.length;
-        const totalNeighborsHelped = data?.total_neighbors_helped || reports.filter(
+        const totalReportsTracked = data?.total_reports_tracked !== undefined ? data.total_reports_tracked : reports.length;
+        const totalNeighborsHelped = data?.total_neighbors_helped !== undefined ? data.total_neighbors_helped : reports.filter(
           (r) => String(r.status).toLowerCase() === "solved"
         ).length;
 
