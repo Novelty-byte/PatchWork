@@ -106,10 +106,9 @@ function useCountUp(target, duration = 1600) {
 
 /* ── Stats items ── */
 const STATS = [
-  { value: 1240, label: "Reports filed",     suffix: "+" },
-  { value: 860,  label: "Neighbors helped",  suffix: "+" },
-  { value: 98,   label: "Issues resolved",   suffix: "%" },
-  { value: 34,   label: "Neighborhoods",     suffix: "" },
+  { value: 0, label: "Reports tracked",  suffix: "+" },
+  { value: 0, label: "Neighbors helped", suffix: "+" },
+  { value: 0, label: "Issues resolved",  suffix: "%" },
 ];
 
 function StatItem({ value, label, suffix }) {
@@ -293,27 +292,24 @@ export default function Landing() {
   useEffect(() => {
     let unmounted = false;
     fetchReports()
-      .then((reports) => {
-        if (unmounted || !Array.isArray(reports) || reports.length === 0) return;
-        const filed = reports.length;
-        const solvedCount = reports.filter(
+      .then((data) => {
+        if (unmounted) return;
+        const reports = Array.isArray(data) ? data : (data?.reports || []);
+
+        // Use the total historical counts if provided, otherwise fallback to dashboard count
+        const totalReportsTracked = data?.total_reports_tracked || reports.length;
+        const totalNeighborsHelped = data?.total_neighbors_helped || reports.filter(
           (r) => String(r.status).toLowerCase() === "solved"
         ).length;
-        const solveRate = filed > 0 ? Math.round((solvedCount / filed) * 100) : 98;
-        const upvotesTotal = reports.reduce((acc, r) => acc + (r.upvotes || 0), 0);
-        const neighbors = filed + upvotesTotal;
-        const areas = new Set(
-          reports
-            .map((r) => (r.location || "").split(",")[0].trim())
-            .filter(Boolean)
-        );
-        const sectors = Math.max(areas.size, 1);
+
+        const solveRate = totalReportsTracked > 0
+          ? Math.round((totalNeighborsHelped / totalReportsTracked) * 100)
+          : 0;
 
         setStats([
-          { value: filed, label: "Reports tracked", suffix: filed >= 10 ? "+" : "" },
-          { value: neighbors, label: "Neighbors helped", suffix: neighbors >= 10 ? "+" : "" },
+          { value: totalReportsTracked, label: "Reports tracked", suffix: totalReportsTracked >= 10 ? "+" : "" },
+          { value: totalNeighborsHelped, label: "Neighbors helped", suffix: totalNeighborsHelped >= 10 ? "+" : "" },
           { value: solveRate, label: "Issues resolved", suffix: "%" },
-          { value: sectors, label: "Neighborhood sectors", suffix: "" },
         ]);
       })
       .catch(() => {});

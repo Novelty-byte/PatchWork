@@ -117,9 +117,15 @@ router.post('/', applySubmissionLimiter, async (req, res) => {
 const handleDashboard = async (req, res) => {
   try {
     const dashboardReports = await db.getDashboardReports();
+    const allReports = await db.getAllReportsForStats();
+    const totalReportsTracked = allReports.length;
+    const totalNeighborsHelped = allReports.filter(r => String(r.status).toLowerCase() === 'solved').length;
+
     return res.json({
       success: true,
       count: dashboardReports.length,
+      total_reports_tracked: totalReportsTracked,
+      total_neighbors_helped: totalNeighborsHelped,
       reports: dashboardReports.map(sanitizeForPublic)
     });
   } catch (err) {

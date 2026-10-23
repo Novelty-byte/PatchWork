@@ -333,10 +333,32 @@ function getNearbyReports(lat, lng, radiusMeters) {
   });
 }
 
+/**
+ * Get all reports for stats calculation (historical total tracked and solved)
+ */
+async function getAllReportsForStats() {
+  if (isConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        return data.map(attachGpsCoordinates);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase getAllReportsForStats error, falling back to local store:', err.message);
+    }
+  }
+  return reports.map(attachGpsCoordinates);
+}
+
 module.exports = {
   createReport,
   getReportById,
   getDashboardReports,
+  getAllReportsForStats,
   markReportSolved,
   updateVerification,
   upvoteReport,

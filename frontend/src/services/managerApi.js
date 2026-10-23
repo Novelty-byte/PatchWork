@@ -48,10 +48,18 @@ async function loadReports() {
   if (MOCK) {
     await wait(800);
     if (!mockReports) mockReports = seed();
-    return mockReports.map((r) => ({ ...r }));
+    return {
+      reports: mockReports.map((r) => ({ ...r })),
+      total_reports_tracked: mockReports.length,
+      total_neighbors_helped: mockReports.filter((r) => String(r.status).toLowerCase() === 'solved').length
+    };
   }
   const data = await request('/api/reports/dashboard');
-  return data.reports || [];
+  return {
+    reports: data.reports || [],
+    total_reports_tracked: data.total_reports_tracked,
+    total_neighbors_helped: data.total_neighbors_helped
+  };
 }
 
 export async function markSolved(id) {

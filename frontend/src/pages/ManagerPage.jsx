@@ -608,7 +608,8 @@ export default function ManagerPage() {
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setState((s) => ({ ...s, kind: "loading" }));
     try {
-      const reports = await fetchReports();
+      const data = await fetchReports();
+      const reports = Array.isArray(data) ? data : (data?.reports || []);
       setState({ kind: "ok", reports });
       setLastSync(Date.now());
     } catch {
