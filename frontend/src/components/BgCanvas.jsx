@@ -33,6 +33,16 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
       return document.documentElement.getAttribute("data-theme") === "dark";
     }
 
+    function mulberry(seed) {
+      return function () {
+        seed |= 0;
+        seed = (seed + 0x6d2b79f5) | 0;
+        let z = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z;
+        return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
     const ICON_PATHS = [
       "M12 3L2 12h3v9h6v-6h2v6h6v-9h3z",
       "M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z",
@@ -86,6 +96,53 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
         { freq: 0.0009, phase: 3.0, amp: 0.09, yBase: 0.75 },
         { freq: 0.0006, phase: 4.2, amp: 0.11, yBase: 0.42, violet: true },
       ];
+      function fishRgb() {
+        const th = document.documentElement.getAttribute("data-theme");
+        if (th === "cyberpunk") return ["0,240,255", "168,85,247", "242,188,87"];
+        if (th === "nordic") return ["125,211,252", "165,243,252", "242,188,87"];
+        if (th === "solar-punk") return ["4,120,87", "132,204,22", "234,179,8"];
+        if (th === "dark") return ["56,189,248", "63,181,162", "242,188,87"];
+        return ["6,107,94", "14,165,233", "226,123,115"];
+      }
+      const fishes = Array.from({ length: 7 }, (_, i) => {
+        const r = mulberry(i * 97 + 13);
+        return {
+          x: r() * (W + 200), y: r() * H,
+          size: 10 + r() * 16,
+          speed: 0.6 + r() * 1.2,
+          waveAmp: 8 + r() * 18,
+          waveFreq: 0.008 + r() * 0.01,
+          wavePhase: r() * Math.PI * 2,
+          variant: Math.floor(r() * 3),
+        };
+      });
+      function drawFish(f, rgb, y) {
+        const dark = isDark();
+        const s = f.size;
+        ctx.save();
+        ctx.translate(f.x, y);
+        ctx.rotate(Math.atan(-f.waveAmp * f.waveFreq * Math.cos(f.x * f.waveFreq + f.wavePhase)));
+        ctx.scale(-1, 1);
+        ctx.globalAlpha = dark ? 0.5 : 0.4;
+        const bob = Math.sin(t * 0.08 + f.wavePhase) * f.size * 0.06;
+        ctx.translate(0, bob);
+        ctx.fillStyle = `rgba(${rgb},1)`;
+        ctx.beginPath();
+        ctx.moveTo(-s, 0);
+        ctx.quadraticCurveTo(-s * 0.3, -s * 0.55, s * 0.7, 0);
+        ctx.quadraticCurveTo(-s * 0.3, s * 0.55, -s, 0);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.95, 0);
+        ctx.lineTo(-s * 1.5, -s * 0.45);
+        ctx.lineTo(-s * 1.5, s * 0.45);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(${rgb},0.8)`;
+        ctx.fill();
+        ctx.fillStyle = dark ? "rgba(10,25,20,0.9)" : "rgba(255,255,255,0.95)";
+        ctx.beginPath(); ctx.arc(-s * 0.45, -s * 0.12, Math.max(1, s * 0.09), 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
       function tick() {
         ctx.clearRect(0, 0, W, H);
         t += 1;
@@ -110,6 +167,17 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
           }
           ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
           ctx.fillStyle = grad; ctx.fill();
+        }
+        for (const f of fishes) {
+          f.x -= f.speed;
+          if (f.x < -f.size * 2.2) {
+            f.x = W + f.size * 2 + Math.random() * 300;
+            f.y = Math.random() * H;
+            f.speed = 0.6 + Math.random() * 1.2;
+            f.wavePhase = Math.random() * Math.PI * 2;
+          }
+          const y = f.y + Math.sin(f.x * f.waveFreq + f.wavePhase) * f.waveAmp;
+          drawFish(f, fishRgb()[f.variant], y);
         }
         animId = requestAnimationFrame(tick);
       }
@@ -181,25 +249,110 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
       }
       tick();
     } else if (mode === "dashboard") {
-      const elements = Array.from({ length: 12 }, () => ({
-        x: Math.random() * W, y: Math.random() * H,
-        type: Math.random() > 0.5 ? 'tree' : 'soil',
-        size: 20 + Math.random() * 40, rot: Math.random() * Math.PI * 2
-      }));
+      const PX_GRIDS = {
+        tree: [
+          "....GGGG....",
+          "..GGGGGGGG..",
+          ".GGGGGGGGGG.",
+          "  GGGGGGGG  ",
+          "   GGGGGG   ",
+          "    TTTT    ",
+          "    TTTT    ",
+        ],
+        pine: [
+          "....P....",
+          "...PPP...",
+          "..PPPPPP.",
+          ".PPPPPPPP.",
+          "...PPPP...",
+          "....TT....",
+          "....TT....",
+        ],
+        house: [
+          "..RRRR..",
+          ".RRRRRR.",
+          "RRRRRRRR",
+          "..WWWW..",
+          "..WDDW..",
+          "..WDDW..",
+          "..WWWW..",
+        ],
+        soil: [
+          "..........",
+          ".B..B..B..",
+          ".D..D..D..",
+          "DDDDDDDDDD",
+          "DDDDDDDDDD",
+        ],
+        bush: [
+          "...GG...",
+          ".GGGGGG.",
+          "GGGGGGGG",
+          "GGGGGGGG",
+        ],
+        flower: [
+          ".P.P.",
+          "PPPPP",
+          ".P.P.",
+          "..G..",
+          "..G..",
+          "..G..",
+        ],
+        bench: [
+          "TTTTTTTT",
+          "TTTTTTTT",
+          "..T..T..",
+          "..T..T..",
+        ],
+      };
+      const PX_COLORS = {
+        G: dark => (dark ? "rgba(63,181,162,0.9)" : "#066b5e"),
+        T: dark => (dark ? "rgba(166,124,82,0.9)" : "rgba(120,85,50,0.9)"),
+        P: dark => (dark ? "rgba(99,220,196,0.9)" : "rgba(4,120,87,0.9)"),
+        R: dark => (dark ? "rgba(226,123,115,0.9)" : "rgba(194,65,12,0.9)"),
+        D: dark => (dark ? "rgba(101,132,117,0.9)" : "rgba(101,119,98,0.9)"),
+        W: dark => (dark ? "rgba(232,242,238,0.85)" : "rgba(255,251,240,0.9)"),
+        B: dark => (dark ? "rgba(99,220,196,0.9)" : "rgba(242,188,87,0.9)"),
+        F: dark => (dark ? "rgba(242,188,87,0.9)" : "rgba(226,123,115,0.9)"),
+      };
+      const PX_TYPES = Object.keys(PX_GRIDS);
+      const rand = mulberry(2026);
+      const elements = Array.from({ length: 16 }, () => {
+        const type = PX_TYPES[Math.floor(rand() * PX_TYPES.length)];
+        return {
+          x: rand() * W, y: rand() * H,
+          type, size: 5 + Math.floor(rand() * 3), rot: (rand() - 0.5) * 0.5,
+          alpha: 0.08 + rand() * 0.1,
+          vx: (0.25 + rand() * 0.35) * (rand() > 0.5 ? 1 : -1),
+          vy: (rand() - 0.5) * 0.14,
+        };
+      });
       function tick() {
         ctx.clearRect(0, 0, W, H);
         const dark = isDark();
         for (const el of elements) {
+          el.x += el.vx; el.y += el.vy;
+          if (el.x < -60) { el.x = W + 50; el.y = Math.random() * H; }
+          else if (el.x > W + 60) { el.x = -60; el.y = Math.random() * H; }
+          if (el.y < -60) { el.y = H + 60; el.x = Math.random() * W; }
+          else if (el.y > H + 60) { el.y = -60; el.x = Math.random() * W; }
+          const grid = PX_GRIDS[el.type];
+          const rows = grid.length, cols = grid[0].length;
+          const cell = el.size;
           ctx.save();
-          ctx.translate(el.x, el.y); ctx.rotate(el.rot);
-          ctx.globalAlpha = dark ? 0.15 : 0.1;
-          ctx.fillStyle = el.type === 'tree' ? (dark ? '#3fb5a2' : '#066b5e') : (dark ? '#e8f2ee' : '#a1a1aa');
-          if (el.type === 'tree') {
-            ctx.fillRect(-el.size / 4, 0, el.size / 2, el.size);
-            ctx.beginPath(); ctx.moveTo(-el.size / 2, 0); ctx.lineTo(el.size / 2, 0); ctx.lineTo(0, -el.size); ctx.fill();
-          } else {
-            ctx.fillRect(-el.size / 2, -el.size / 4, el.size, el.size / 2);
-          }
+          ctx.translate(el.x, el.y);
+          ctx.rotate(el.rot);
+          ctx.globalAlpha = el.alpha * (dark ? 1 : 0.9);
+          grid.forEach((row, r) => {
+            for (let c = 0; c < row.length; c++) {
+              const ch = row[c];
+              if (ch === " " || ch === ".") continue;
+              const colorFn = PX_COLORS[ch];
+              if (!colorFn) continue;
+              ctx.fillStyle = colorFn(dark);
+              ctx.fillRect((c - cols / 2) * cell, (r - rows / 2) * cell, cell, cell);
+            }
+          });
           ctx.restore();
         }
         animId = requestAnimationFrame(tick);
@@ -208,7 +361,6 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
     } else if (mode === "scene") {
       let t = 0;
       let far = [], near = [], windows = [], stars = [];
-      function mulberry(seed) { return function () { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let z = Math.imul(seed ^ (seed >>> 15), 1 | seed); z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z; return ((z ^ (z >>> 14)) >>> 0) / 4294967296; }; }
       function meteorRgb() {
         const th = document.documentElement.getAttribute("data-theme");
         if (th === "cyberpunk") return "0,240,255";
