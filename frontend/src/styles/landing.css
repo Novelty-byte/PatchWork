@@ -403,9 +403,9 @@
   box-shadow: inset 0 2px 24px rgba(0, 0, 0, 0.1);
 }
 .lp-stats-in {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
   text-align: center;
 }
 .lp-stat-item {
