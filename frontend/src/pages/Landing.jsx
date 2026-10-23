@@ -11,6 +11,7 @@ import {
   Clock,
   ArrowRight,
   ArrowUpRight,
+  ArrowDown,
   CircleCheck,
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle.jsx";
@@ -21,7 +22,7 @@ import "../styles/landing.css";
 
 const LOGO = "/patchwork-logo.jpeg";
 
-/* ── Scroll reveal ── */
+/* ── Enhanced Scroll reveal with parallax-like scaling ── */
 function useReveal() {
   useEffect(() => {
     const els = document.querySelectorAll(".lp-reveal");
@@ -34,11 +35,13 @@ function useReveal() {
         entries.forEach((en) => {
           if (en.isIntersecting) {
             en.target.classList.add("is-in");
-            io.unobserve(en.target);
+            // Don't unobserve, so it stays responsive to scroll up/down
+          } else {
+            en.target.classList.remove("is-in");
           }
         });
       },
-      { threshold: 0.15 },
+      { threshold: 0.1 }
     );
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
@@ -269,6 +272,23 @@ export default function Landing() {
   useScrollBar();
   const [stats, setStats] = useState(STATS);
   const spotlight = useSpotlight();
+  const [scrollIndicatorActive, setScrollIndicatorActive] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Enhanced scroll indicator
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const scrollPercent = (scrollTop / (docHeight - winHeight)) * 100;
+      setScrollProgress(scrollPercent);
+      setScrollIndicatorActive(scrollPercent < 95);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   /* ── Ticket tilt on cursor (skipped on touch / reduced motion) ── */
   function handleTilt(e) {
@@ -322,7 +342,11 @@ export default function Landing() {
   return (
     <div className="lp">
       {/* ── Scroll progress ── */}
-      <div id="lp-scroll-bar" className="scroll-bar" style={{ width: "0%" }} />
+      <div id="lp-scroll-bar" className="scroll-bar" style={{ width: `${scrollProgress}%` }} />
+      {/* ── Scroll indicator ── */}
+      <div className={`lp-scroll-indicator${scrollIndicatorActive ? ' is-active' : ''}`}>
+        <ArrowDown size={18} />
+      </div>
 
       {/* ── Floating neighborhood icons across the whole page ── */}
       <BgCanvas mode="icons-page" fixed />
@@ -455,12 +479,14 @@ export default function Landing() {
       {/* ── CTA ── */}
       <section className="lp-cta lp-reveal">
         <div className="lp-wrap">
-          <h2 className="lp-h2">See a problem? Let us patch it.</h2>
-          <p className="lp-sub">It takes less than a minute.</p>
-          <Link to="/report" className="lp-btn lp-btn-lg">
-            Report a problem <ArrowRight size={20} />
-          </Link>
-          <p className="lp-note">
+          <h2 className="lp-h2 lp-reveal">See a problem? Let us patch it.</h2>
+          <p className="lp-sub lp-reveal">It takes less than a minute.</p>
+          <div className="lp-reveal">
+            <Link to="/report" className="lp-btn lp-btn-lg">
+              Report a problem <ArrowRight size={20} />
+            </Link>
+          </div>
+          <p className="lp-note lp-reveal">
             or{" "}
             <Link to="/dashboard" className="lp-inline">
               view the live dashboard
