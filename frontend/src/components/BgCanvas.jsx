@@ -302,8 +302,54 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
       tick();
     }
 
-    /* ══════════════ RADAR MODE (layer 3) ══════════════ */
-    if (mode === "radar") {
+    /* ══════════════ DASHBOARD MODE (layer 3) ══════════════ */
+    if (mode === "dashboard") {
+      let t = 0;
+      let elements = [];
+      const COUNT = 12;
+
+      function makeEl() {
+        return {
+          x: Math.random() * W,
+          y: Math.random() * H,
+          type: Math.random() > 0.5 ? 'tree' : 'soil',
+          size: 20 + Math.random() * 40,
+          rot: Math.random() * Math.PI * 2,
+        };
+      }
+      for (let i = 0; i < COUNT; i++) elements.push(makeEl());
+
+      function drawEl(el) {
+        const dark = isDark();
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        ctx.rotate(el.rot);
+        ctx.globalAlpha = dark ? 0.15 : 0.1;
+        ctx.fillStyle = el.type === 'tree' ? (dark ? '#3fb5a2' : '#066b5e') : (dark ? '#e8f2ee' : '#a1a1aa');
+
+        if (el.type === 'tree') {
+          ctx.fillRect(-el.size / 4, 0, el.size / 2, el.size); // trunk
+          ctx.beginPath();
+          ctx.moveTo(-el.size / 2, 0);
+          ctx.lineTo(el.size / 2, 0);
+          ctx.lineTo(0, -el.size);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-el.size / 2, -el.size / 4, el.size, el.size / 2);
+        }
+        ctx.restore();
+      }
+
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        t += 1;
+        for (const el of elements) {
+          drawEl(el);
+        }
+        animId = requestAnimationFrame(tick);
+      }
+      tick();
+    }
       let t = 0;
       let nodes = [];
       const NODE_COUNT = 26;

@@ -739,6 +739,7 @@ export default function ManagerPage() {
       {/* Radar mesh background canvas (layer 3) */}
       <div className="mg-canvas-wrap" aria-hidden="true">
         <BgCanvas mode="radar" />
+        <BgCanvas mode="dashboard" />
       </div>
 
       {showSolveConfetti && <Confetti duration={2800} />}

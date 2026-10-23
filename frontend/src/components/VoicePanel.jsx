@@ -53,7 +53,7 @@ function WaveCanvas({ active }) {
       }
       ctx.globalAlpha = 1;
 
-      /* smooth bezier ribbon waves */
+      /* smooth bezier ribbon waves with swimming fish accents */
       for (let b = 0; b < 2; b++) {
         const amp = (active ? 13 : 5) + b * 4;
         ctx.beginPath();
@@ -69,6 +69,36 @@ function WaveCanvas({ active }) {
         ctx.globalAlpha = (b === 0 ? 0.75 : 0.4) * (active ? 1 : 0.55);
         ctx.lineWidth = 2;
         ctx.stroke();
+      }
+
+      /* Draw swimming fish accents along the wave */
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      const fishColors = isDark
+        ? ["#3fb5a2", "#38bdf8", "#f2bc57"]
+        : ["#066b5e", "#0ea5e9", "#d97706"];
+
+      for (let f = 0; f < 3; f++) {
+        const fishX = ((t * (20 + f * 10)) + f * 100) % (W + 40) - 20;
+        const amp = (active ? 13 : 5);
+        const fishY = cy + Math.sin(fishX * 0.024 + t * 2.2) * amp * 0.5;
+
+        ctx.save();
+        ctx.translate(fishX, fishY);
+        ctx.fillStyle = fishColors[f % fishColors.length];
+        ctx.globalAlpha = active ? 0.8 : 0.4;
+
+        // Simple fish shape
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 6, 3, 0, 0, Math.PI * 2); // Body
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(-6, 0);
+        ctx.lineTo(-10, -3);
+        ctx.lineTo(-10, 3);
+        ctx.closePath(); // Tail
+        ctx.fill();
+        ctx.restore();
       }
       ctx.globalAlpha = 1;
 
