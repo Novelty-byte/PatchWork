@@ -64,6 +64,13 @@ function classifyVoiceCategory(category, text) {
     return category.trim();
   }
   const t = (text || '').toLowerCase();
+  if (/garbage|trash|waste|dumping|dump|dumpster|rubbish|junk|scrap|debris/i.test(t)) return 'Garbage / Waste';
+  if (/stray|wild|dog|animal|cat|bird|pet|wildlife|pest|rodent|insect|bug/i.test(t)) return 'Stray Animals';
+  if (/noise|pollution|loud|sound|noisy|volume|disturbance|annoying|harsh|screech/i.test(t)) return 'Noise / Pollution';
+  if (/water leak|pipeline|pipe|water pipe|water line|water supply|water overflow|water damage|water burst|water pipe leak/i.test(t)) return 'Water Pipe Leak';
+  if (/sign|traffic sign|signage|sign damage|broken sign|damaged sign|sign pole/i.test(t)) return 'Damaged Sign';
+  if (/tree|branch|fallen tree|broken branch|tree damage|tree hazard|tree fall/i.test(t)) return 'Tree / Branch';
+
   if (/streetlight|street light|light|lamp|pole|dark street|bulb/i.test(t)) return 'Broken Streetlight';
   if (/pothole|crater|asphalt|road fracture|broken road/i.test(t)) return 'Pothole';
   if (/sewage|drain|gutter|manhole|sewer/i.test(t)) return 'Sewage';
@@ -79,15 +86,23 @@ function cleanVoiceDescription(rawDesc, summary, category) {
     return `Civic infrastructure fault reported via voice call (${category || 'Community Issue'}).`;
   }
 
-  // Split into sentences and drop meta-call narrative
+  // Split into sentences and drop meta-call narrative & assistant intro
   const sentences = text.split(/(?<=[.!?])\s+/);
   const cleanSentences = sentences.filter(s => {
-    return !/provided their name|provided.*email|email address for ticket|ticket was generated|ticket confirmation|successfully submitted|call ended|caller provided|user provided/i.test(s);
+    return !/the call (began|started|ended|was|commenced)|introduc(ed|ing) itself|offered to help|offering to help|welcomed the caller|patchwork community|community support|community assistant|provided their|caller provided|user provided|resident provided|email address|phone number|ticket was|confirmation email|thanked the caller|concluded the call/i.test(s);
   });
 
-  let result = cleanSentences.join(' ')
-    .replace(/^The (user|caller|resident) called to report (a|an|the)?\s*/i, '')
-    .replace(/^The (user|caller|resident) reported (a|an|the)?\s*/i, '')
+  // Filter for sentences describing physical issues
+  const problemSentences = cleanSentences.filter(s => {
+    const lower = s.toLowerCase();
+    return /broken|pothole|sewage|flood|leak|overflow|damaged|spark|wire|dark|trash|garbage|stray|noise|hazard|issue|problem|cavity|crater|fence|tree|pipe|water|wall|pipeline|drain|manhole|sewer|asphalt|concrete|pillar|gate|bench|swing|playground|streetlight|light|lamp|pole|bulb/i.test(lower);
+  });
+
+  const sourceSentences = problemSentences.length > 0 ? problemSentences : (cleanSentences.length > 0 ? cleanSentences : sentences);
+
+  let result = sourceSentences.join(' ')
+    .replace(/^The (user|caller|resident) (called to report|reported|stated that|noted that|explained that)\s*/i, '')
+    .replace(/^The (user|caller|resident)\s*/i, '')
     .trim();
 
   if (result.length > 0) {
@@ -96,6 +111,30 @@ function cleanVoiceDescription(rawDesc, summary, category) {
     result = `${category || 'Civic infrastructure fault'} reported via voice call.`;
   }
   return result;
+}
+
+function cleanVoiceLocation(loc, summary) {
+  if (!loc || typeof loc !== 'string') return 'Reported during call';
+
+  let cleaned = loc.trim()
+    .replace(/^(at|near|on|outside|behind|in)\s+/i, '')
+    .replace(/\.$/, '')
+    .trim();
+
+  if (cleaned.length < 3 || /at problem|in the call|at the beginning|they stated|user reported|during call/i.test(cleaned)) {
+    return 'Reported during call';
+  }
+
+  if (/problem|issue|location|place|spot|area/i.test(cleaned)) {
+    const locMatch = summary?.match(/(?:near|at|on|outside|behind|in)\s+([A-Za-z0-9\s-]+?)(?:\.|\s+They|\s+The\s+user|$)/i);
+    if (locMatch) {
+      cleaned = locMatch[0].trim().replace(/\.$/, '').replace(/^(at|near|on|outside|behind|in)\s+/i, '');
+    } else {
+      return 'Reported during call';
+    }
+  }
+
+  return cleaned;
 }
 
 /**
@@ -133,7 +172,7 @@ router.post('/webhook', async (req, res) => {
         const resolvedCategory = classifyVoiceCategory(rawCategory, rawDesc);
         const resolvedDesc = cleanVoiceDescription(rawDesc, null, resolvedCategory);
 
-        const voiceLocation = args.location || 'Reported via Voice';
+        const voiceLocation = cleanVoiceLocation(args.location, null);
         const finalLocation = gpsText && !voiceLocation.includes('📍 GPS:')
           ? `${voiceLocation} · ${gpsText}`
           : voiceLocation;
@@ -220,7 +259,7 @@ router.post('/webhook', async (req, res) => {
           if (locMatch) extractedLoc = locMatch[0].trim().replace(/\.$/, '');
         }
 
-        const voiceLocation = extractedLoc || 'Reported during call';
+        const voiceLocation = cleanVoiceLocation(extractedLoc, summary);
         const finalLocation = gpsText && !voiceLocation.includes('📍 GPS:')
           ? `${voiceLocation} · ${gpsText}`
           : voiceLocation;

@@ -25,7 +25,7 @@ const SYSTEM_PROMPT = `
 You are Patch, the intelligent AI community reporting assistant for PatchWork, a neighborhood civic infrastructure reporting platform.
 
 YOUR PURPOSE:
-You help residents report physical infrastructure and civic issues in their community — such as broken streetlights, potholes, sewage overflows, flooding/standing water, damaged park equipment, hazardous building or wall damage, and other civic infrastructure problems.
+You help residents report physical infrastructure and civic issues in their community — such as broken streetlights, potholes, sewage overflows, flooding/standing water, damaged park equipment, hazardous building or wall damage, garbage/debris, stray animals, noise/pollution, water pipe leaks, damaged signs, fallen trees, or ANY OTHER civic or community infrastructure problem.
 
 CONVERSATIONAL PERSONALITY & BEHAVIOR (ACT LIKE A TRUE AI):
 1. Warm, Natural & Flexible:
@@ -47,7 +47,7 @@ CONVERSATIONAL PERSONALITY & BEHAVIOR (ACT LIKE A TRUE AI):
 
 5. Mandatory 4 Details to Complete a Report:
    Before a report can be finalized, you need:
-   a. Physical problem description & category (Broken Streetlight, Pothole, Sewage, Flooding, Damaged Park, Damaged Building, or Other Community Issue).
+   a. Physical problem description & category (Broken Streetlight, Pothole, Sewage, Flooding, Damaged Park, Damaged Building, Garbage / Waste, Stray Animals, Noise / Pollution, Water Pipe Leak, Damaged Sign, Tree / Branch, or Other Community Issue).
    b. Specific location (street name, house/block number, landmark).
    c. Reporter's full name.
    d. Reporter's valid email address (MANDATORY: explain that ticket confirmation and status updates will be sent to this email). Contact phone is optional.
@@ -74,7 +74,7 @@ When and ONLY when all 4 details (problem description, location, full name, vali
     "contact": "Phone Number (or 'Not provided')",
     "email": "user@example.com",
     "location": "Exact Location",
-    "category": "Broken Streetlight | Pothole | Sewage | Flooding | Damaged Park | Damaged Building | Other Community Issue",
+    "category": "Broken Streetlight | Pothole | Sewage | Flooding | Damaged Park | Damaged Building | Garbage / Waste | Stray Animals | Noise / Pollution | Water Pipe Leak | Damaged Sign | Tree / Branch | Other Community Issue",
     "description": "Clear and detailed summary of the physical infrastructure fault only",
     "severity": "low | medium | high | critical"
   }
@@ -330,8 +330,18 @@ function processFallbackConversation(message, history) {
   // Determine Category based on problem
   let category = 'Other Community Issue';
   const searchText = (problemMsg || allUserText).toLowerCase();
-  if (/rubble|debris|garbage|litter|rubbish|trash|waste|junk|scrap|scattered/i.test(searchText)) {
-    category = 'Other Community Issue';
+  if (/garbage|trash|waste|dumping|dump|dumpster|rubbish|junk|scrap|debris|litter/i.test(searchText)) {
+    category = 'Garbage / Waste';
+  } else if (/stray|wild|dog|animal|cat|bird|pet|wildlife|pest|rodent|insect|bug/i.test(searchText)) {
+    category = 'Stray Animals';
+  } else if (/noise|pollution|loud|sound|noisy|volume|disturbance|annoying|harsh|screech/i.test(searchText)) {
+    category = 'Noise / Pollution';
+  } else if (/water leak|pipeline|pipe|water pipe|water line|water supply|water overflow|water damage|water burst/i.test(searchText)) {
+    category = 'Water Pipe Leak';
+  } else if (/sign|traffic sign|signage|sign damage|broken sign|damaged sign|sign pole/i.test(searchText)) {
+    category = 'Damaged Sign';
+  } else if (/tree|branch|fallen tree|broken branch|tree damage|tree hazard|tree fall/i.test(searchText)) {
+    category = 'Tree / Branch';
   } else if (/streetlight|street light|light|lamp|bulb|dark/i.test(searchText) && !/wire/i.test(searchText)) {
     category = 'Broken Streetlight';
   } else if (/\bpothole\b|\bcrater\b|road fracture|broken road|road damage|cracked road/i.test(searchText)) {

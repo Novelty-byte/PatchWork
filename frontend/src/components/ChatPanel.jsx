@@ -11,6 +11,7 @@ const QUICK_PICKS = [
   'Flooding',
   'Damaged Park',
   'Damaged Building',
+  'Other',
 ];
 
 export default function ChatPanel({ messages, typing, onSend, children, showChips, chips = CHIPS, done = false }) {

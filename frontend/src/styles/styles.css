@@ -1970,6 +1970,37 @@ h1 {
   --green-glow-lg: 0 0 52px rgba(56, 189, 248, 0.35);
 }
 
+/* Nordic Glass theme drawer & modal contrast fix */
+:root[data-theme="nordic"] .mg-panel {
+  background: rgba(15, 23, 42, 0.96) !important;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-left: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.65);
+}
+
+:root[data-theme="nordic"] .modal,
+:root[data-theme="nordic"] .mg-confirm .modal {
+  background: rgba(15, 23, 42, 0.96) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+}
+
+:root[data-theme="nordic"] .mg-panel-head,
+:root[data-theme="nordic"] .mg-panel-foot {
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+:root[data-theme="nordic"] .mg-aibox.v-unverified {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="nordic"] .mg-aibox .mg-ver {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* Frosted glass card utility (Nordic-style, works everywhere) */
 .vfx-glass-card {
   background: rgba(255, 255, 255, 0.65);

@@ -213,7 +213,7 @@ export default function App() {
   const quickChips = isLocationPrompt
     ? ["Near the main gate", "Near the park", "Outside Block A", "Type a location"]
     : isInitialPrompt
-      ? ["Broken streetlight", "Pothole on the road", "Flooding / sewage leak", "Damaged park equipment"]
+      ? ["Broken streetlight", "Pothole on the road", "Flooding / sewage leak", "Damaged park equipment", "Other community issue"]
       : null;
 
   const showChips = !done && Boolean(quickChips && quickChips.length > 0);
