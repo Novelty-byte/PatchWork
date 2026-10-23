@@ -520,38 +520,6 @@ export default function BgCanvas({ mode = "aurora", fixed = false }) {
       }
       tick();
     }
-        for (const n of nodes) {
-          n.x += n.vx0 || 0;
-          n.blink += 0.02;
-        }
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i + 1; j < nodes.length; j++) {
-            const dx = nodes[i].x - nodes[j].x;
-            const dy = nodes[i].y - nodes[j].y;
-            const dist = Math.hypot(dx, dy);
-            if (dist < 170) {
-              const alpha = (1 - dist / 170) * (dark ? 0.12 : 0.08);
-              ctx.beginPath();
-              ctx.moveTo(nodes[i].x, nodes[i].y);
-              ctx.lineTo(nodes[j].x, nodes[j].y);
-              ctx.strokeStyle = `rgba(${ringColor},${alpha})`;
-              ctx.lineWidth = 1;
-              ctx.stroke();
-            }
-          }
-        }
-        for (const n of nodes) {
-          const glow = 0.5 + 0.5 * Math.sin(n.blink);
-          ctx.beginPath();
-          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${ringColor},${(dark ? 0.4 : 0.28) * (0.5 + 0.5 * glow)})`;
-          ctx.fill();
-        }
-
-        animId = requestAnimationFrame(tick);
-      }
-      tick();
-    }
 
     /* ══════════════ SCENE MODE (layer 2) ══════════════ */
     if (mode === "scene") {
